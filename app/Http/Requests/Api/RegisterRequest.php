@@ -25,6 +25,9 @@ class RegisterRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['prohibited'],
+            'primary_member_type' => ['sometimes', 'string', 'in:GENERAL,LIFETIME,ASSOCIATE'],
+            'secondary_member_type_id' => ['sometimes', 'nullable', 'exists:member_types,id'],
         ];
     }
 }

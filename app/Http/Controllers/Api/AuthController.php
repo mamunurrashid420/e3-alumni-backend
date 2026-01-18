@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
+use App\PrimaryMemberType;
+use App\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +24,11 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => UserRole::Member,
+            'primary_member_type' => $request->has('primary_member_type')
+                ? PrimaryMemberType::from($request->primary_member_type)
+                : null,
+            'secondary_member_type_id' => $request->secondary_member_type_id ?? null,
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
