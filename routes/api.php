@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\TokenController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,4 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/membership-applications/{membershipApplication}', [MembershipApplicationController::class, 'update']);
     Route::post('/membership-applications/{membershipApplication}/approve', [MembershipApplicationController::class, 'approve']);
     Route::post('/membership-applications/{membershipApplication}/reject', [MembershipApplicationController::class, 'reject']);
+
+    // Member management routes (super admin only)
+    Route::get('/members', [UserController::class, 'index']);
+    Route::get('/members/{user}', [UserController::class, 'show']);
 });
