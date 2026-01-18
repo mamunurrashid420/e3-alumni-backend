@@ -28,6 +28,7 @@ class User extends Authenticatable
         'role',
         'primary_member_type',
         'secondary_member_type_id',
+        'member_id',
     ];
 
     /**
@@ -93,5 +94,52 @@ class User extends Authenticatable
     public function hasSecondaryMemberType(): bool
     {
         return $this->secondary_member_type_id !== null;
+    }
+
+    /**
+     * Generate a unique member ID.
+     *
+     * Format: MEMBERSHIPTYPE-YEAR-UNIQUENUMBER
+     * MEMBERSHIPTYPE: G (General), LT (Lifetime), A (Associate)
+     * YEAR: SSC year (or JSC if SSC is null)
+     * UNIQUENUMBER: 4-digit sequential number starting from 0001
+     */
+    public static function generateMemberId(PrimaryMemberType $type, ?int $sscYear, ?int $jscYear): string
+    {
+        // Map membership type to prefix
+        $prefix = match ($type) {
+            PrimaryMemberType::General => 'G',
+            PrimaryMemberType::Lifetime => 'LT',
+            PrimaryMemberType::Associate => 'A',
+        };
+
+        // Use SSC year if available, otherwise JSC year
+        $year = $sscYear ?? $jscYear;
+
+        if ($year === null) {
+            throw new \InvalidArgumentException('Either SSC year or JSC year must be provided');
+        }
+
+        // Find the highest unique number for this membership type + year combination
+        $pattern = "{$prefix}-{$year}-%";
+        $existingIds = static::where('member_id', 'like', $pattern)
+            ->whereNotNull('member_id')
+            ->pluck('member_id')
+            ->map(function ($memberId) {
+                // Extract the number part (last 4 digits)
+                $parts = explode('-', $memberId);
+
+                return (int) end($parts);
+            })
+            ->filter()
+            ->toArray();
+
+        // Get the next sequential number
+        $nextNumber = empty($existingIds) ? 1 : max($existingIds) + 1;
+
+        // Format as 4-digit zero-padded string
+        $uniqueNumber = str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+
+        return "{$prefix}-{$year}-{$uniqueNumber}";
     }
 }

@@ -22,9 +22,11 @@ return new class extends Migration
         // Update existing users to have 'member' role
         DB::table('users')->update(['role' => 'member']);
 
-        // Add check constraints for enums
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('super_admin', 'member'))");
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_primary_member_type_check CHECK (primary_member_type IN ('GENERAL', 'LIFETIME', 'ASSOCIATE') OR primary_member_type IS NULL)");
+        // Add check constraints for enums (PostgreSQL only)
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('super_admin', 'member'))");
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_primary_member_type_check CHECK (primary_member_type IN ('GENERAL', 'LIFETIME', 'ASSOCIATE') OR primary_member_type IS NULL)");
+        }
     }
 
     /**
@@ -37,8 +39,10 @@ return new class extends Migration
             $table->dropColumn(['role', 'primary_member_type', 'secondary_member_type_id']);
         });
 
-        // Drop check constraints
-        DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
-        DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_primary_member_type_check');
+        // Drop check constraints (PostgreSQL only)
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
+            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_primary_member_type_check');
+        }
     }
 };
