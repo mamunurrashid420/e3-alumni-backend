@@ -10,6 +10,7 @@ use App\Http\Resources\Api\MembershipApplicationResource;
 use App\Mail\MembershipApprovedMail;
 use App\Models\MembershipApplication;
 use App\Models\User;
+use App\Notifications\MembershipApprovedSms;
 use App\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -159,12 +160,6 @@ class MembershipApplicationController extends Controller
             ], 422);
         }
 
-        if (! $membershipApplication->email) {
-            return response()->json([
-                'message' => 'Application must have an email address to be approved.',
-            ], 422);
-        }
-
         // Generate member ID
         $memberId = User::generateMemberId(
             $membershipApplication->membership_type,
@@ -175,10 +170,11 @@ class MembershipApplicationController extends Controller
         // Generate random password
         $password = Str::random(12);
 
-        // Create user
+        // Create user - always store phone number from application
         $user = User::create([
             'name' => $membershipApplication->full_name,
-            'email' => $membershipApplication->email,
+            'email' => $membershipApplication->email, // Can be null
+            'phone' => $membershipApplication->mobile_number, // Always set from application
             'password' => Hash::make($password),
             'role' => UserRole::Member,
             'primary_member_type' => $membershipApplication->membership_type,
@@ -192,8 +188,13 @@ class MembershipApplicationController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Send email with password
-        Mail::to($user->email)->send(new MembershipApprovedMail($user, $password, $memberId));
+        // Send credentials via email if available, otherwise via SMS
+        if ($user->email) {
+            Mail::to($user->email)->send(new MembershipApprovedMail($user, $password, $memberId));
+        } else {
+            // Send SMS notification (currently logs to file, can be configured with SMS service later)
+            $user->notify(new MembershipApprovedSms($password, $memberId));
+        }
 
         return response()->json([
             'message' => 'Application approved successfully. User account created.',
@@ -202,6 +203,7 @@ class MembershipApplicationController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'member_id' => $user->member_id,
             ],
         ]);

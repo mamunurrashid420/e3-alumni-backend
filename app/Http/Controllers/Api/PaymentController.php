@@ -21,18 +21,43 @@ class PaymentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized action.');
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Unauthenticated.');
         }
 
         $query = Payment::query();
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        // If user is not a super admin, only show their own payments
+        if (! $user->isSuperAdmin()) {
+            if (! $user->member_id) {
+                return response()->json([
+                    'data' => [],
+                    'links' => [],
+                    'meta' => [
+                        'current_page' => 1,
+                        'from' => null,
+                        'last_page' => 1,
+                        'path' => $request->url(),
+                        'per_page' => 15,
+                        'to' => null,
+                        'total' => 0,
+                    ],
+                ]);
+            }
+            $query->where('member_id', $user->member_id);
         }
 
-        if ($request->has('member_id')) {
-            $query->where('member_id', $request->member_id);
+        // Super admins can filter by status and member_id
+        if ($user->isSuperAdmin()) {
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('member_id')) {
+                $query->where('member_id', $request->member_id);
+            }
         }
 
         $payments = $query->latest()->paginate(15);
@@ -70,8 +95,17 @@ class PaymentController extends Controller
      */
     public function show(Request $request, Payment $payment): JsonResponse
     {
-        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized action.');
+        $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        // If user is not a super admin, only allow viewing their own payments
+        if (! $user->isSuperAdmin()) {
+            if ($user->member_id !== $payment->member_id) {
+                abort(403, 'Unauthorized action.');
+            }
         }
 
         return (new PaymentResource($payment))->response();

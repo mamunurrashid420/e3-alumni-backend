@@ -24,6 +24,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role',
         'primary_member_type',
@@ -65,14 +66,46 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the membership application associated with this user (by email).
+     * Get the membership application associated with this user (by email or phone).
      */
     public function membershipApplication()
     {
-        return \App\Models\MembershipApplication::where('email', $this->email)
-            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
-            ->latest()
-            ->first();
+        $query = \App\Models\MembershipApplication::query()
+            ->where('status', \App\Enums\MembershipApplicationStatus::Approved);
+
+        if ($this->email) {
+            $query->where('email', $this->email);
+        } elseif ($this->phone) {
+            $query->where('mobile_number', $this->phone);
+        } else {
+            return null;
+        }
+
+        return $query->latest()->first();
+    }
+
+    /**
+     * Check if the user has an email address.
+     */
+    public function hasEmail(): bool
+    {
+        return ! empty($this->email);
+    }
+
+    /**
+     * Check if the user has a phone number.
+     */
+    public function hasPhone(): bool
+    {
+        return ! empty($this->phone);
+    }
+
+    /**
+     * Get the login identifier (email or phone).
+     */
+    public function getLoginIdentifier(): ?string
+    {
+        return $this->email ?? $this->phone;
     }
 
     /**
