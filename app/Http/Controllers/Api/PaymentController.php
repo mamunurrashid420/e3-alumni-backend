@@ -1,0 +1,188 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Enums\PaymentStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StorePaymentRequest;
+use App\Http\Requests\Api\UpdatePaymentRequest;
+use App\Http\Resources\Api\PaymentResource;
+use App\Models\Payment;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class PaymentController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $query = Payment::query();
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('member_id')) {
+            $query->where('member_id', $request->member_id);
+        }
+
+        $payments = $query->latest()->paginate(15);
+
+        return PaymentResource::collection($payments)->response();
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StorePaymentRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        // Handle file upload
+        if ($request->hasFile('payment_proof_file')) {
+            $file = $request->file('payment_proof_file');
+            $filename = 'payment_proof_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('payments', $filename, 'public');
+            $data['payment_proof_file'] = $path;
+        }
+
+        // Set default status
+        $data['status'] = PaymentStatus::Pending->value;
+
+        $payment = Payment::create($data);
+
+        return (new PaymentResource($payment))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Request $request, Payment $payment): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return (new PaymentResource($payment))->response();
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, UpdatePaymentRequest $updateRequest, Payment $payment): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $data = $updateRequest->validated();
+
+        // Handle file upload
+        if ($updateRequest->hasFile('payment_proof_file')) {
+            // Delete old file if exists
+            if ($payment->payment_proof_file) {
+                Storage::disk('public')->delete($payment->payment_proof_file);
+            }
+
+            $file = $updateRequest->file('payment_proof_file');
+            $filename = 'payment_proof_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('payments', $filename, 'public');
+            $data['payment_proof_file'] = $path;
+        }
+
+        $payment->update($data);
+
+        return (new PaymentResource($payment))->response();
+    }
+
+    /**
+     * Approve the payment.
+     */
+    public function approve(Request $request, Payment $payment): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($payment->status !== PaymentStatus::Pending) {
+            return response()->json([
+                'message' => 'Payment is not pending approval.',
+            ], 422);
+        }
+
+        $payment->update([
+            'status' => PaymentStatus::Approved,
+            'approved_by' => $request->user()->id,
+            'approved_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Payment approved successfully.',
+            'payment' => new PaymentResource($payment),
+        ]);
+    }
+
+    /**
+     * Reject the payment.
+     */
+    public function reject(Request $request, Payment $payment): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($payment->status !== PaymentStatus::Pending) {
+            return response()->json([
+                'message' => 'Payment is not pending approval.',
+            ], 422);
+        }
+
+        $payment->update([
+            'status' => PaymentStatus::Rejected,
+            'approved_by' => $request->user()->id,
+            'approved_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Payment rejected successfully.',
+            'payment' => new PaymentResource($payment),
+        ]);
+    }
+
+    /**
+     * Get member information by member ID for auto-population.
+     */
+    public function getMemberInfo(Request $request, string $memberId): JsonResponse
+    {
+        $user = User::where('member_id', $memberId)->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Member not found.',
+            ], 404);
+        }
+
+        // Get address and mobile from membership application if available
+        $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'member_id' => $user->member_id,
+            'name' => $user->name,
+            'address' => $membershipApplication?->present_address ?? '',
+            'mobile_number' => $membershipApplication?->mobile_number ?? '',
+        ]);
+    }
+}

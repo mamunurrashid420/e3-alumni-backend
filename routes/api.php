@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MembershipApplicationController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
@@ -17,6 +18,10 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Membership application routes (public)
 Route::post('/membership-applications', [MembershipApplicationController::class, 'store']);
+
+// Payment routes (public)
+Route::post('/payments', [PaymentController::class, 'store']);
+Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -40,4 +45,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Member management routes (super admin only)
     Route::get('/members', [UserController::class, 'index']);
     Route::get('/members/{user}', [UserController::class, 'show']);
+
+    // Payment routes (super admin only)
+    Route::get('/payments', [PaymentController::class, 'index']);
+    Route::get('/payments/{payment}', [PaymentController::class, 'show']);
+    Route::put('/payments/{payment}', [PaymentController::class, 'update']);
+    Route::post('/payments/{payment}/approve', [PaymentController::class, 'approve']);
+    Route::post('/payments/{payment}/reject', [PaymentController::class, 'reject']);
 });
