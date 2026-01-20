@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\PrimaryMemberType;
 use App\UserRole;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -29,6 +30,17 @@ class DatabaseSeeder extends Seeder
             'role' => UserRole::SuperAdmin,
             'primary_member_type' => null,
             'secondary_member_type_id' => null,
+        ]);
+
+        // Create member user
+        User::create([
+            'name' => 'Test Member',
+            'email' => 'member@example.com',
+            'password' => Hash::make('password'),
+            'role' => UserRole::Member,
+            'primary_member_type' => PrimaryMemberType::General,
+            'secondary_member_type_id' => null,
+            'member_id' => 'G-2000-0001',
         ]);
     }
 }

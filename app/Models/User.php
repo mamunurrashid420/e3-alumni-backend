@@ -65,6 +65,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the membership application associated with this user (by email).
+     */
+    public function membershipApplication()
+    {
+        return \App\Models\MembershipApplication::where('email', $this->email)
+            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
+            ->latest()
+            ->first();
+    }
+
+    /**
      * Check if the user is a super admin.
      */
     public function isSuperAdmin(): bool

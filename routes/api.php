@@ -9,7 +9,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
-    return $request->user();
+    $user = $request->user();
+    
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
+    
+    // Get membership application data
+    $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
+        ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
+        ->latest()
+        ->first();
+    
+    // Use UserResource and include membership application
+    $userResource = new \App\Http\Resources\Api\UserResource($user);
+    $userData = $userResource->toArray($request);
+    
+    // Add membership application data if available
+    if ($membershipApplication) {
+        $membershipApplicationResource = new \App\Http\Resources\Api\MembershipApplicationResource($membershipApplication);
+        $userData['membership_application'] = $membershipApplicationResource->toArray($request);
+    } else {
+        $userData['membership_application'] = null;
+    }
+    
+    return response()->json($userData);
 })->middleware('auth:sanctum');
 
 // Authentication routes
