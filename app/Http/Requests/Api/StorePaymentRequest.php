@@ -21,11 +21,20 @@ class StorePaymentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+        $isAuthenticated = $user !== null;
+
         return [
             'member_id' => ['nullable', 'string', 'exists:users,member_id'],
-            'name' => ['required', 'string', 'max:255'],
-            'address' => ['required', 'string'],
-            'mobile_number' => ['required', 'string', 'max:20'],
+            'name' => $isAuthenticated 
+                ? ['nullable', 'string', 'max:255'] 
+                : ['required', 'string', 'max:255'],
+            'address' => $isAuthenticated 
+                ? ['nullable', 'string'] 
+                : ['required', 'string'],
+            'mobile_number' => $isAuthenticated 
+                ? ['nullable', 'string', 'max:20'] 
+                : ['required', 'string', 'max:20'],
             'payment_purpose' => ['required', 'string', 'in:ASSOCIATE_MEMBERSHIP_FEES,GENERAL_MEMBERSHIP_FEES,LIFETIME_MEMBERSHIP_FEES,SPECIAL_YEARLY_CONTRIBUTION_EXECUTIVE,DONATIONS,PATRON,OTHERS'],
             'payment_amount' => ['required', 'numeric', 'min:0'],
             'payment_proof_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],

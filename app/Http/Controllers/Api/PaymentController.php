@@ -71,6 +71,37 @@ class PaymentController extends Controller
     public function store(StorePaymentRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $user = $request->user();
+
+        // If user is authenticated and fields are not provided, populate from user data
+        if ($user) {
+            // Populate name if not provided
+            if (empty($data['name'])) {
+                $data['name'] = $user->name ?? '';
+            }
+
+            // Populate address and mobile_number from membership application if not provided
+            if (empty($data['address']) || empty($data['mobile_number'])) {
+                $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
+                    ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
+                    ->latest()
+                    ->first();
+
+                if ($membershipApplication) {
+                    if (empty($data['address'])) {
+                        $data['address'] = $membershipApplication->present_address ?? '';
+                    }
+                    if (empty($data['mobile_number'])) {
+                        $data['mobile_number'] = $membershipApplication->mobile_number ?? '';
+                    }
+                }
+            }
+
+            // Populate member_id if not provided and user has one
+            if (empty($data['member_id']) && $user->member_id) {
+                $data['member_id'] = $user->member_id;
+            }
+        }
 
         // Handle file upload
         if ($request->hasFile('payment_proof_file')) {
