@@ -146,7 +146,10 @@ class User extends Authenticatable
      * Format: MEMBERSHIPTYPE-YEAR-UNIQUENUMBER
      * MEMBERSHIPTYPE: G (General), LT (Lifetime), A (Associate)
      * YEAR: SSC year (or JSC if SSC is null)
-     * UNIQUENUMBER: 4-digit sequential number starting from 0001
+     * UNIQUENUMBER: 4-digit sequential number shared across all member types
+     *
+     * The last 4 digits increment sequentially across all member types and years.
+     * For example: G-2000-0001, LT-2020-0002, A-2015-0003
      */
     public static function generateMemberId(PrimaryMemberType $type, ?int $sscYear, ?int $jscYear): string
     {
@@ -164,21 +167,25 @@ class User extends Authenticatable
             throw new \InvalidArgumentException('Either SSC year or JSC year must be provided');
         }
 
-        // Find the highest unique number for this membership type + year combination
-        $pattern = "{$prefix}-{$year}-%";
-        $existingIds = static::where('member_id', 'like', $pattern)
-            ->whereNotNull('member_id')
+        // Find the highest unique number across ALL member IDs (regardless of type or year)
+        $existingIds = static::whereNotNull('member_id')
             ->pluck('member_id')
             ->map(function ($memberId) {
-                // Extract the number part (last 4 digits)
+                // Extract the number part (last 4 digits after the last hyphen)
                 $parts = explode('-', $memberId);
+                $lastPart = end($parts);
 
-                return (int) end($parts);
+                // Validate that the last part is numeric
+                if (is_numeric($lastPart)) {
+                    return (int) $lastPart;
+                }
+
+                return null;
             })
             ->filter()
             ->toArray();
 
-        // Get the next sequential number
+        // Get the next sequential number (shared across all types)
         $nextNumber = empty($existingIds) ? 1 : max($existingIds) + 1;
 
         // Format as 4-digit zero-padded string

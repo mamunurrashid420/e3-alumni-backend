@@ -321,6 +321,54 @@ it('uses SSC year for member ID when available, otherwise JSC year', function ()
     expect($user2->member_id)->toStartWith('LT-2018-'); // Uses JSC year
 });
 
+it('uses shared sequence for member IDs across all types and years', function () {
+    Mail::fake();
+
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    // Create first member - General type, year 2000
+    $application1 = MembershipApplication::factory()->create([
+        'email' => 'test1@example.com',
+        'membership_type' => PrimaryMemberType::General,
+        'ssc_year' => 2000,
+    ]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/membership-applications/{$application1->id}/approve")
+        ->assertSuccessful();
+
+    $user1 = User::where('email', 'test1@example.com')->first();
+    expect($user1->member_id)->toBe('G-2000-0001');
+
+    // Create second member - Lifetime type, different year 2020
+    $application2 = MembershipApplication::factory()->create([
+        'email' => 'test2@example.com',
+        'membership_type' => PrimaryMemberType::Lifetime,
+        'ssc_year' => 2020,
+    ]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/membership-applications/{$application2->id}/approve")
+        ->assertSuccessful();
+
+    $user2 = User::where('email', 'test2@example.com')->first();
+    expect($user2->member_id)->toBe('LT-2020-0002'); // Should be 0002, not 0001
+
+    // Create third member - Associate type, yet another year
+    $application3 = MembershipApplication::factory()->create([
+        'email' => 'test3@example.com',
+        'membership_type' => PrimaryMemberType::Associate,
+        'ssc_year' => 2015,
+    ]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/membership-applications/{$application3->id}/approve")
+        ->assertSuccessful();
+
+    $user3 = User::where('email', 'test3@example.com')->first();
+    expect($user3->member_id)->toBe('A-2015-0003'); // Should be 0003, continuing the sequence
+});
+
 it('generates correct member ID prefixes for different membership types', function () {
     Mail::fake();
 
@@ -332,7 +380,7 @@ it('generates correct member ID prefixes for different membership types', functi
         [PrimaryMemberType::Associate, 'A'],
     ];
 
-    foreach ($types as [$type, $prefix]) {
+    foreach ($types as $index => [$type, $prefix]) {
         $application = MembershipApplication::factory()->create([
             'email' => "test{$prefix}@example.com",
             'membership_type' => $type,
@@ -345,6 +393,10 @@ it('generates correct member ID prefixes for different membership types', functi
 
         $user = User::where('email', "test{$prefix}@example.com")->first();
         expect($user->member_id)->toStartWith("{$prefix}-2020-");
+
+        // Verify sequential numbering (0001, 0002, 0003)
+        $expectedNumber = str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT);
+        expect($user->member_id)->toEndWith($expectedNumber);
     }
 });
 
