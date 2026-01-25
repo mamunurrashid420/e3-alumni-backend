@@ -18,6 +18,8 @@ Route::get('/user', function (Request $request) {
         return response()->json(['message' => 'Unauthenticated'], 401);
     }
 
+    $user->load('secondaryMemberType');
+
     // Get membership application data
     $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
         ->where('status', \App\Enums\MembershipApplicationStatus::Approved)

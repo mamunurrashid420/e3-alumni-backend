@@ -45,20 +45,22 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $emailOrPhone = $request->email_or_phone;
-        
+
         // Determine if input is email (contains @) or phone
         $isEmail = str_contains($emailOrPhone, '@');
-        
+
         // Find user by email or phone
         $user = $isEmail
             ? User::where('email', $emailOrPhone)->first()
             : User::where('phone', $emailOrPhone)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email_or_phone' => ['The provided credentials are incorrect.'],
             ]);
         }
+
+        $user->load('secondaryMemberType');
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
