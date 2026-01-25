@@ -28,8 +28,8 @@ class StoreMembershipApplicationRequest extends FormRequest
             'father_name' => ['required', 'string', 'max:255'],
             'mother_name' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:MALE,FEMALE,OTHER'],
-            'jsc_year' => ['nullable', 'integer', 'min:1900', 'max:'.date('Y')],
-            'ssc_year' => ['nullable', 'integer', 'min:1900', 'max:'.date('Y')],
+            'jsc_year' => ['nullable', 'integer', 'min:1900', 'max:' . date('Y')],
+            'ssc_year' => ['nullable', 'integer', 'min:1900', 'max:' . date('Y')],
             'studentship_proof_type' => ['nullable', 'string', 'in:JSC,EIGHT,SSC,METRIC_CERTIFICATE,MARK_SHEET,OTHERS'],
             'studentship_proof_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'highest_educational_degree' => ['nullable', 'string', 'max:255'],
@@ -43,7 +43,8 @@ class StoreMembershipApplicationRequest extends FormRequest
             't_shirt_size' => ['required', 'string', 'in:XXXL,XXL,XL,L,M,S'],
             'blood_group' => ['required', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'entry_fee' => ['nullable', 'numeric', 'min:0'],
-            'payment_years' => ['required', 'integer', 'in:1,2,3'],
+            'payment_years' => ['required', 'string'],
+            'payment_method' => ['required', 'string', 'max:255'],
             'receipt_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
     }

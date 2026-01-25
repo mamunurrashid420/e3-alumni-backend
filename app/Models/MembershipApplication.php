@@ -47,6 +47,7 @@ class MembershipApplication extends Model
         'entry_fee',
         'yearly_fee',
         'payment_years',
+        'payment_method',
         'total_paid_amount',
         'receipt_file',
         'status',
@@ -112,7 +113,7 @@ class MembershipApplication extends Model
      */
     public function getStudentshipProofFileUrlAttribute(): ?string
     {
-        if (! $this->studentship_proof_file) {
+        if (!$this->studentship_proof_file) {
             return null;
         }
 
@@ -126,7 +127,7 @@ class MembershipApplication extends Model
      */
     public function getReceiptFileUrlAttribute(): ?string
     {
-        if (! $this->receipt_file) {
+        if (!$this->receipt_file) {
             return null;
         }
 
