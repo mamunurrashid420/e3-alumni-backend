@@ -116,7 +116,9 @@ class MembershipApplication extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->studentship_proof_file);
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+        return "{$baseUrl}/api/membership-applications/{$this->id}/studentship-proof";
     }
 
     /**
@@ -128,6 +130,8 @@ class MembershipApplication extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->receipt_file);
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+        return "{$baseUrl}/api/membership-applications/{$this->id}/receipt";
     }
 }

@@ -27,6 +27,14 @@ class UserResource extends JsonResource
                     'description' => $this->secondaryMemberType->description,
                 ];
             }),
+            'secondary_member_type_id' => $this->secondary_member_type_id,
+            'latest_self_declaration' => $this->whenLoaded('selfDeclarations', function () use ($request) {
+                $latest = $this->selfDeclarations->first();
+                if (!$latest) {
+                    return null;
+                }
+                return (new \App\Http\Resources\Api\SelfDeclarationResource($latest))->toArray($request);
+            }),
             'member_id' => $this->member_id,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'created_at' => $this->created_at->toIso8601String(),

@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FileController;
+use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
@@ -10,21 +13,21 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     $user = $request->user();
-    
+
     if (!$user) {
         return response()->json(['message' => 'Unauthenticated'], 401);
     }
-    
+
     // Get membership application data
     $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
         ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
         ->latest()
         ->first();
-    
+
     // Use UserResource and include membership application
     $userResource = new \App\Http\Resources\Api\UserResource($user);
     $userData = $userResource->toArray($request);
-    
+
     // Add membership application data if available
     if ($membershipApplication) {
         $membershipApplicationResource = new \App\Http\Resources\Api\MembershipApplicationResource($membershipApplication);
@@ -32,7 +35,7 @@ Route::get('/user', function (Request $request) {
     } else {
         $userData['membership_application'] = null;
     }
-    
+
     return response()->json($userData);
 })->middleware('auth:sanctum');
 
@@ -42,6 +45,9 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Membership application routes (public)
 Route::post('/membership-applications', [MembershipApplicationController::class, 'store']);
+
+// Member types route (public)
+Route::get('/member-types', [MemberTypeController::class, 'index']);
 
 // Payment routes (public)
 Route::post('/payments', [PaymentController::class, 'store']);
@@ -76,4 +82,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/payments/{payment}', [PaymentController::class, 'update']);
     Route::post('/payments/{payment}/approve', [PaymentController::class, 'approve']);
     Route::post('/payments/{payment}/reject', [PaymentController::class, 'reject']);
+
+    // Self-declaration routes
+    Route::post('/self-declarations', [SelfDeclarationController::class, 'store']);
+
+    // Self-declaration routes (super admin only)
+    Route::get('/self-declarations', [SelfDeclarationController::class, 'index']);
+    Route::get('/self-declarations/{selfDeclaration}', [SelfDeclarationController::class, 'show']);
+    Route::post('/self-declarations/{selfDeclaration}/approve', [SelfDeclarationController::class, 'approve']);
+    Route::post('/self-declarations/{selfDeclaration}/reject', [SelfDeclarationController::class, 'reject']);
+
+    // File serving routes
+    Route::get('/self-declarations/{selfDeclaration}/signature', [FileController::class, 'serveSelfDeclarationSignature']);
+    Route::get('/payments/{payment}/proof', [FileController::class, 'servePaymentProof']);
+    Route::get('/membership-applications/{membershipApplication}/studentship-proof', [FileController::class, 'serveStudentshipProof']);
+    Route::get('/membership-applications/{membershipApplication}/receipt', [FileController::class, 'serveReceipt']);
 });

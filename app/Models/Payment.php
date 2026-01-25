@@ -88,6 +88,8 @@ class Payment extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->payment_proof_file);
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+        return "{$baseUrl}/api/payments/{$this->id}/proof";
     }
 }
