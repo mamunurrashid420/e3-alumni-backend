@@ -25,6 +25,7 @@ class Payment extends Model
         'address',
         'mobile_number',
         'payment_purpose',
+        'payment_method',
         'payment_amount',
         'payment_proof_file',
         'status',
@@ -84,7 +85,7 @@ class Payment extends Model
      */
     public function getPaymentProofFileUrlAttribute(): ?string
     {
-        if (! $this->payment_proof_file) {
+        if (!$this->payment_proof_file) {
             return null;
         }
 
