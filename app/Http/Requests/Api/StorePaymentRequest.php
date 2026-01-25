@@ -26,16 +26,16 @@ class StorePaymentRequest extends FormRequest
 
         return [
             'member_id' => ['nullable', 'string', 'exists:users,member_id'],
-            'name' => $isAuthenticated 
-                ? ['nullable', 'string', 'max:255'] 
+            'name' => $isAuthenticated
+                ? ['nullable', 'string', 'max:255']
                 : ['required', 'string', 'max:255'],
-            'address' => $isAuthenticated 
-                ? ['nullable', 'string'] 
+            'address' => $isAuthenticated
+                ? ['nullable', 'string']
                 : ['required', 'string'],
-            'mobile_number' => $isAuthenticated 
-                ? ['nullable', 'string', 'max:20'] 
+            'mobile_number' => $isAuthenticated
+                ? ['nullable', 'string', 'max:20']
                 : ['required', 'string', 'max:20'],
-            'payment_purpose' => ['required', 'string', 'in:ASSOCIATE_MEMBERSHIP_FEES,GENERAL_MEMBERSHIP_FEES,LIFETIME_MEMBERSHIP_FEES,SPECIAL_YEARLY_CONTRIBUTION_EXECUTIVE,DONATIONS,PATRON,OTHERS'],
+            'payment_purpose' => ['required', 'string', 'in:ASSOCIATE_MEMBERSHIP_FEES,GENERAL_MEMBERSHIP_FEES,LIFETIME_MEMBERSHIP_FEES,SPECIAL_YEARLY_CONTRIBUTION_EXECUTIVE,YEARLY_SUBSCRIPTION_ASSOCIATE_MEMBER,YEARLY_SUBSCRIPTION_GENERAL_MEMBER,YEARLY_SUBSCRIPTION_LIFETIME_MEMBER,DONATIONS,PATRON,OTHERS'],
             'payment_amount' => ['required', 'numeric', 'min:0'],
             'payment_proof_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
