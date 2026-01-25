@@ -167,8 +167,8 @@ class MembershipApplicationController extends Controller
             $membershipApplication->jsc_year
         );
 
-        // Generate random password
-        $password = Str::random(12);
+        // Set fixed password
+        $password = 'password';
 
         // Create user - always store phone number from application
         $user = User::create([
