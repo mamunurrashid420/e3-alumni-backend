@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMembershipApplicationRequest extends FormRequest
 {
@@ -18,6 +19,27 @@ class StoreMembershipApplicationRequest extends FormRequest
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function prepareForValidation()
+    {
+        if ($this->has('mobile_number')) {
+            $mobile = $this->mobile_number;
+            // Remove all non-digit characters
+            $mobile = preg_replace('/[^0-9]/', '', $mobile);
+
+            // Normalize BD mobile numbers: if it's 13 digits starting with 880, remove 88
+            if (strlen($mobile) === 13 && str_starts_with($mobile, '880')) {
+                $mobile = substr($mobile, 2);
+            }
+
+            $this->merge([
+                'mobile_number' => $mobile,
+            ]);
+        }
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
      */
     public function rules(): array
     {
@@ -35,8 +57,25 @@ class StoreMembershipApplicationRequest extends FormRequest
             'highest_educational_degree' => ['nullable', 'string', 'max:255'],
             'present_address' => ['required', 'string'],
             'permanent_address' => ['required', 'string'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'mobile_number' => ['required', 'string', 'max:20'],
+            'email' => [
+                'nullable',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+                Rule::unique('membership_applications', 'email')->where(function ($query) {
+                    return $query->whereIn('status', ['PENDING', 'APPROVED']);
+                }),
+            ],
+            'mobile_number' => [
+                'required',
+                'string',
+                'size:11',
+                Rule::unique('users', 'phone'),
+                Rule::unique('membership_applications', 'mobile_number')->where(function ($query) {
+                    return $query->whereIn('status', ['PENDING', 'APPROVED']);
+                }),
+            ],
             'profession' => ['required', 'string', 'max:255'],
             'designation' => ['nullable', 'string', 'max:255'],
             'institute_name' => ['nullable', 'string', 'max:255'],

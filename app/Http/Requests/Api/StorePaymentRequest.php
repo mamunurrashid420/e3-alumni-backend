@@ -35,7 +35,7 @@ class StorePaymentRequest extends FormRequest
             'mobile_number' => $isAuthenticated
                 ? ['nullable', 'string', 'max:20']
                 : ['required', 'string', 'max:20'],
-            'payment_purpose' => ['required', 'string', 'in:ASSOCIATE_MEMBERSHIP_FEES,GENERAL_MEMBERSHIP_FEES,LIFETIME_MEMBERSHIP_FEES,SPECIAL_YEARLY_CONTRIBUTION_EXECUTIVE,YEARLY_SUBSCRIPTION_ASSOCIATE_MEMBER,YEARLY_SUBSCRIPTION_GENERAL_MEMBER,YEARLY_SUBSCRIPTION_LIFETIME_MEMBER,DONATIONS,PATRON,OTHERS'],
+            'payment_purpose' => ['required', 'string', new \Illuminate\Validation\Rules\Enum(\App\Enums\PaymentPurpose::class)],
             'payment_method' => ['required', 'string'],
             'payment_amount' => ['required', 'numeric', 'min:0'],
             'payment_proof_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
