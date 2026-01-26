@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
             'role' => $this->role?->value,
             'primary_member_type' => $this->primary_member_type?->value,
             'secondary_member_type' => $this->whenLoaded('secondaryMemberType', function () {

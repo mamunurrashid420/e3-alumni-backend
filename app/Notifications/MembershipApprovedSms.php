@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Channels\SmsChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\VonageMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,8 @@ class MembershipApprovedSms extends Notification
     public function __construct(
         public string $password,
         public string $memberId
-    ) {}
+    ) {
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -27,24 +28,20 @@ class MembershipApprovedSms extends Notification
      */
     public function via(object $notifiable): array
     {
-        // For now, just log the SMS content since no SMS service is configured
-        // To enable actual SMS sending, configure a service like Twilio or Vonage
-        // and add 'vonage' or 'twilio' to the array below
-        return ['database'];
+        return ['database', SmsChannel::class];
     }
 
     /**
-     * Get the Vonage / SMS representation of the notification.
+     * Get the SMS representation of the notification.
      */
-    public function toVonage(object $notifiable): VonageMessage
+    public function toSms(object $notifiable): string
     {
-        $message = "Your membership application has been approved!\n\n";
+        $message = "Congratulations! Your membership application has been approved.\n";
         $message .= "Member ID: {$this->memberId}\n";
-        $message .= "Password: {$this->password}\n\n";
-        $message .= "Please login using your phone number and this password.";
+        $message .= "Password: {$this->password}\n";
+        $message .= "Login at: " . env('FRONTEND_URL', 'your-portal-url');
 
-        return (new VonageMessage)
-            ->content($message);
+        return $message;
     }
 
     /**

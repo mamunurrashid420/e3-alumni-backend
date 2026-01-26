@@ -167,8 +167,8 @@ class MembershipApplicationController extends Controller
             $membershipApplication->jsc_year
         );
 
-        // Set fixed password
-        $password = 'password';
+        // Generate random 8-digit numerical password
+        $password = (string) random_int(10000000, 99999999);
 
         // Create user - always store phone number from application
         $user = User::create([
@@ -188,11 +188,13 @@ class MembershipApplicationController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Send credentials via email if available, otherwise via SMS
+        // Send credentials via email if available
         if ($user->email) {
             Mail::to($user->email)->send(new MembershipApprovedMail($user, $password, $memberId));
-        } else {
-            // Send SMS notification (currently logs to file, can be configured with SMS service later)
+        }
+
+        // Always send SMS notification if phone number is available
+        if ($user->phone) {
             $user->notify(new MembershipApprovedSms($password, $memberId));
         }
 

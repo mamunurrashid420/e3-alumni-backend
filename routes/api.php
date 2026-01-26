@@ -77,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Member management routes (super admin only)
     Route::get('/members', [UserController::class, 'index']);
     Route::get('/members/{user}', [UserController::class, 'show']);
+    Route::post('/members/{user}/resend-sms', [UserController::class, 'resendSms']);
 
     // Payment routes (super admin only)
     Route::get('/payments', [PaymentController::class, 'index']);

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'bdbulksms' => [
+        'token' => env('SMS_TOKEN'),
+    ],
+
 ];
