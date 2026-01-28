@@ -26,7 +26,7 @@ class MembershipApplicationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -49,6 +49,7 @@ class MembershipApplicationController extends Controller
         $data = $request->validated();
 
         // Calculate fees based on membership type and payment years
+        // Entry fee is shown separately (equals 1 year of membership) but not added to total
         $data['yearly_fee'] = $this->calculateYearlyFee($data['membership_type']);
         $data['total_paid_amount'] = $this->calculateTotalPaidAmount(
             $data['yearly_fee'],
@@ -59,14 +60,14 @@ class MembershipApplicationController extends Controller
         // Handle file uploads
         if ($request->hasFile('studentship_proof_file')) {
             $file = $request->file('studentship_proof_file');
-            $filename = 'studentship_proof_' . Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $filename = 'studentship_proof_'.Str::random(20).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('membership-applications', $filename, 'public');
             $data['studentship_proof_file'] = $path;
         }
 
         if ($request->hasFile('receipt_file')) {
             $file = $request->file('receipt_file');
-            $filename = 'receipt_' . Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $filename = 'receipt_'.Str::random(20).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('membership-applications', $filename, 'public');
             $data['receipt_file'] = $path;
         }
@@ -83,7 +84,7 @@ class MembershipApplicationController extends Controller
      */
     public function show(Request $request, MembershipApplication $membershipApplication): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -95,7 +96,7 @@ class MembershipApplicationController extends Controller
      */
     public function update(Request $request, UpdateMembershipApplicationRequest $updateRequest, MembershipApplication $membershipApplication): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -109,7 +110,7 @@ class MembershipApplicationController extends Controller
             }
 
             $file = $updateRequest->file('studentship_proof_file');
-            $filename = 'studentship_proof_' . Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $filename = 'studentship_proof_'.Str::random(20).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('membership-applications', $filename, 'public');
             $data['studentship_proof_file'] = $path;
         }
@@ -121,7 +122,7 @@ class MembershipApplicationController extends Controller
             }
 
             $file = $updateRequest->file('receipt_file');
-            $filename = 'receipt_' . Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $filename = 'receipt_'.Str::random(20).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('membership-applications', $filename, 'public');
             $data['receipt_file'] = $path;
         }
@@ -150,7 +151,7 @@ class MembershipApplicationController extends Controller
      */
     public function approve(Request $request, MembershipApplication $membershipApplication): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -216,7 +217,7 @@ class MembershipApplicationController extends Controller
      */
     public function reject(Request $request, MembershipApplication $membershipApplication): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -252,14 +253,15 @@ class MembershipApplicationController extends Controller
     }
 
     /**
-     * Calculate total paid amount based on yearly fee, payment years, and entry fee.
+     * Calculate total paid amount based on yearly fee and payment years.
+     * Entry fee is shown separately and not included in the total.
      */
     private function calculateTotalPaidAmount(float $yearlyFee, string|int $paymentYears, float $entryFee = 0): float
     {
         if (is_string($paymentYears) && strtolower($paymentYears) === 'lifetime') {
-            return $yearlyFee + $entryFee;
+            return $yearlyFee;
         }
 
-        return ($yearlyFee * (int) $paymentYears) + $entryFee;
+        return $yearlyFee * (int) $paymentYears;
     }
 }
