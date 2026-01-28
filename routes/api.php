@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FileController;
-use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\MembershipApplicationController;
+use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     $user = $request->user();
 
-    if (!$user) {
+    if (! $user) {
         return response()->json(['message' => 'Unauthenticated'], 401);
     }
 
@@ -33,7 +33,7 @@ Route::get('/user', function (Request $request) {
             ->first();
     }
 
-    if (!$membershipApplication && $user->phone) {
+    if (! $membershipApplication && $user->phone) {
         $membershipApplication = \App\Models\MembershipApplication::where('mobile_number', $user->phone)
             ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
             ->latest()
@@ -108,6 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // File serving routes
     Route::get('/self-declarations/{selfDeclaration}/signature', [FileController::class, 'serveSelfDeclarationSignature']);
     Route::get('/payments/{payment}/proof', [FileController::class, 'servePaymentProof']);
+    Route::get('/payments/{payment}/receipt', [FileController::class, 'serveMoneyReceipt']);
     Route::get('/membership-applications/{membershipApplication}/studentship-proof', [FileController::class, 'serveStudentshipProof']);
     Route::get('/membership-applications/{membershipApplication}/receipt', [FileController::class, 'serveReceipt']);
     Route::get('/membership-applications/{membershipApplication}/photo', [FileController::class, 'servePhoto']);

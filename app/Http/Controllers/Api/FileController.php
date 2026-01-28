@@ -188,4 +188,37 @@ class FileController extends Controller
 
         return Storage::disk('public')->response($membershipApplication->signature);
     }
+
+    /**
+     * Serve payment money receipt file.
+     */
+    public function serveMoneyReceipt(Request $request, Payment $payment): StreamedResponse|\Illuminate\Http\JsonResponse
+    {
+        // Check if user is authenticated
+        if (! $request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Super admins can view any receipt
+        // Regular users can view receipts for payments associated with their member_id
+        if (! $request->user()->isSuperAdmin()) {
+            $userMemberId = $request->user()->member_id;
+            if (! $userMemberId || $payment->member_id !== $userMemberId) {
+                return response()->json(['message' => 'Unauthorized to view this file.'], 403);
+            }
+        }
+
+        if (! $payment->receipt_file) {
+            return response()->json(['message' => 'Receipt file not found.'], 404);
+        }
+
+        if (! Storage::disk('public')->exists($payment->receipt_file)) {
+            return response()->json(['message' => 'File does not exist.'], 404);
+        }
+
+        return Storage::disk('public')->response($payment->receipt_file, null, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="money-receipt-'.$payment->id.'.pdf"',
+        ]);
+    }
 }

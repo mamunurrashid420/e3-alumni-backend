@@ -23,6 +23,7 @@ class PaymentResource extends JsonResource
             'payment_purpose' => $this->payment_purpose?->value,
             'payment_amount' => $this->payment_amount,
             'payment_proof_file' => $this->payment_proof_file_url,
+            'receipt_file' => $this->receipt_file_url,
             'status' => $this->status?->value,
             'approved_by' => $this->approved_by,
             'approved_at' => $this->approved_at?->toIso8601String(),

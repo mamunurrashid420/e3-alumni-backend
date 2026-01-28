@@ -7,7 +7,6 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class Payment extends Model
 {
@@ -28,6 +27,7 @@ class Payment extends Model
         'payment_method',
         'payment_amount',
         'payment_proof_file',
+        'receipt_file',
         'status',
         'approved_by',
         'approved_at',
@@ -85,12 +85,28 @@ class Payment extends Model
      */
     public function getPaymentProofFileUrlAttribute(): ?string
     {
-        if (!$this->payment_proof_file) {
+        if (! $this->payment_proof_file) {
             return null;
         }
 
         // Use API route for secure file serving
         $baseUrl = config('app.url');
+
         return "{$baseUrl}/api/payments/{$this->id}/proof";
+    }
+
+    /**
+     * Get the URL for the receipt file.
+     */
+    public function getReceiptFileUrlAttribute(): ?string
+    {
+        if (! $this->receipt_file) {
+            return null;
+        }
+
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+
+        return "{$baseUrl}/api/payments/{$this->id}/receipt";
     }
 }

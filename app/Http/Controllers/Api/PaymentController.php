@@ -9,6 +9,7 @@ use App\Http\Requests\Api\UpdatePaymentRequest;
 use App\Http\Resources\Api\PaymentResource;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\MoneyReceiptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -186,10 +187,23 @@ class PaymentController extends Controller
             ], 422);
         }
 
+        // Update payment status first
         $payment->update([
             'status' => PaymentStatus::Approved,
             'approved_by' => $request->user()->id,
             'approved_at' => now(),
+        ]);
+
+        // Reload payment with relationships before generating receipt
+        $payment->load('approvedBy');
+
+        // Generate money receipt
+        $receiptService = new MoneyReceiptService;
+        $receiptPath = $receiptService->generateReceipt($payment);
+
+        // Update payment with receipt file path
+        $payment->update([
+            'receipt_file' => $receiptPath,
         ]);
 
         return response()->json([
