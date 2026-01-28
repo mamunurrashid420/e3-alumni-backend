@@ -85,6 +85,8 @@ class StoreMembershipApplicationRequest extends FormRequest
             'payment_years' => ['required', 'string'],
             'payment_method' => ['required', 'string', 'max:255'],
             'receipt_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'signature' => ['required', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
         ];
     }
 }

@@ -41,6 +41,8 @@ class MembershipApplicationResource extends JsonResource
             'payment_years' => $this->payment_years,
             'total_paid_amount' => $this->total_paid_amount,
             'receipt_file' => $this->receipt_file_url,
+            'photo' => $this->photo_url,
+            'signature' => $this->signature_url,
             'status' => $this->status?->value,
             'approved_by' => $this->approved_by,
             'approved_at' => $this->approved_at?->toIso8601String(),

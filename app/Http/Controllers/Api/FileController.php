@@ -128,4 +128,64 @@ class FileController extends Controller
 
         return Storage::disk('public')->response($membershipApplication->receipt_file);
     }
+
+    /**
+     * Serve membership application photo file.
+     */
+    public function servePhoto(Request $request, MembershipApplication $membershipApplication): StreamedResponse|\Illuminate\Http\JsonResponse
+    {
+        // Check if user is authenticated
+        if (! $request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Super admins can view any file
+        // Regular users can view their own application files
+        if (! $request->user()->isSuperAdmin()) {
+            $userEmail = $request->user()->email;
+            if (! $userEmail || $membershipApplication->email !== $userEmail) {
+                return response()->json(['message' => 'Unauthorized to view this file.'], 403);
+            }
+        }
+
+        if (! $membershipApplication->photo) {
+            return response()->json(['message' => 'Photo file not found.'], 404);
+        }
+
+        if (! Storage::disk('public')->exists($membershipApplication->photo)) {
+            return response()->json(['message' => 'File does not exist.'], 404);
+        }
+
+        return Storage::disk('public')->response($membershipApplication->photo);
+    }
+
+    /**
+     * Serve membership application signature file.
+     */
+    public function serveSignature(Request $request, MembershipApplication $membershipApplication): StreamedResponse|\Illuminate\Http\JsonResponse
+    {
+        // Check if user is authenticated
+        if (! $request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Super admins can view any file
+        // Regular users can view their own application files
+        if (! $request->user()->isSuperAdmin()) {
+            $userEmail = $request->user()->email;
+            if (! $userEmail || $membershipApplication->email !== $userEmail) {
+                return response()->json(['message' => 'Unauthorized to view this file.'], 403);
+            }
+        }
+
+        if (! $membershipApplication->signature) {
+            return response()->json(['message' => 'Signature file not found.'], 404);
+        }
+
+        if (! Storage::disk('public')->exists($membershipApplication->signature)) {
+            return response()->json(['message' => 'File does not exist.'], 404);
+        }
+
+        return Storage::disk('public')->response($membershipApplication->signature);
+    }
 }

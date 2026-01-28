@@ -72,6 +72,20 @@ class MembershipApplicationController extends Controller
             $data['receipt_file'] = $path;
         }
 
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = 'photo_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('membership-applications', $filename, 'public');
+            $data['photo'] = $path;
+        }
+
+        if ($request->hasFile('signature')) {
+            $file = $request->file('signature');
+            $filename = 'signature_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('membership-applications', $filename, 'public');
+            $data['signature'] = $path;
+        }
+
         $application = MembershipApplication::create($data);
 
         return (new MembershipApplicationResource($application))
@@ -125,6 +139,30 @@ class MembershipApplicationController extends Controller
             $filename = 'receipt_'.Str::random(20).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('membership-applications', $filename, 'public');
             $data['receipt_file'] = $path;
+        }
+
+        if ($updateRequest->hasFile('photo')) {
+            // Delete old file if exists
+            if ($membershipApplication->photo) {
+                Storage::disk('public')->delete($membershipApplication->photo);
+            }
+
+            $file = $updateRequest->file('photo');
+            $filename = 'photo_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('membership-applications', $filename, 'public');
+            $data['photo'] = $path;
+        }
+
+        if ($updateRequest->hasFile('signature')) {
+            // Delete old file if exists
+            if ($membershipApplication->signature) {
+                Storage::disk('public')->delete($membershipApplication->signature);
+            }
+
+            $file = $updateRequest->file('signature');
+            $filename = 'signature_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('membership-applications', $filename, 'public');
+            $data['signature'] = $path;
         }
 
         // Calculate fees if membership_type or payment_years are being updated

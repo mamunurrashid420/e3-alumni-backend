@@ -50,6 +50,8 @@ class MembershipApplication extends Model
         'payment_method',
         'total_paid_amount',
         'receipt_file',
+        'photo',
+        'signature',
         'status',
         'approved_by',
         'approved_at',
@@ -134,5 +136,33 @@ class MembershipApplication extends Model
         // Use API route for secure file serving
         $baseUrl = config('app.url');
         return "{$baseUrl}/api/membership-applications/{$this->id}/receipt";
+    }
+
+    /**
+     * Get the URL for the photo file.
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (!$this->photo) {
+            return null;
+        }
+
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+        return "{$baseUrl}/api/membership-applications/{$this->id}/photo";
+    }
+
+    /**
+     * Get the URL for the signature file.
+     */
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (!$this->signature) {
+            return null;
+        }
+
+        // Use API route for secure file serving
+        $baseUrl = config('app.url');
+        return "{$baseUrl}/api/membership-applications/{$this->id}/signature";
     }
 }

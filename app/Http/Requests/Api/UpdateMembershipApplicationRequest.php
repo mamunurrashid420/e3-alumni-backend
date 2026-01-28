@@ -45,6 +45,8 @@ class UpdateMembershipApplicationRequest extends FormRequest
             'entry_fee' => ['nullable', 'numeric', 'min:0'],
             'payment_years' => ['sometimes', 'required', 'string'],
             'receipt_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'signature' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
         ];
     }
 }

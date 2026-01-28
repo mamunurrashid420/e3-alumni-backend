@@ -100,4 +100,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{payment}/proof', [FileController::class, 'servePaymentProof']);
     Route::get('/membership-applications/{membershipApplication}/studentship-proof', [FileController::class, 'serveStudentshipProof']);
     Route::get('/membership-applications/{membershipApplication}/receipt', [FileController::class, 'serveReceipt']);
+    Route::get('/membership-applications/{membershipApplication}/photo', [FileController::class, 'servePhoto']);
+    Route::get('/membership-applications/{membershipApplication}/signature', [FileController::class, 'serveSignature']);
 });
