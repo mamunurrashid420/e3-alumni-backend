@@ -20,15 +20,25 @@ Route::get('/user', function (Request $request) {
 
     $user->load('secondaryMemberType');
 
-    // Get membership application data
-    $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
-        ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
-        ->latest()
-        ->first();
-
-    // Use UserResource and include membership application
+    // Use UserResource
     $userResource = new \App\Http\Resources\Api\UserResource($user);
     $userData = $userResource->toArray($request);
+
+    // Get membership application data (check by email or phone, matching User model logic)
+    $membershipApplication = null;
+    if ($user->email) {
+        $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
+            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
+            ->latest()
+            ->first();
+    }
+
+    if (!$membershipApplication && $user->phone) {
+        $membershipApplication = \App\Models\MembershipApplication::where('mobile_number', $user->phone)
+            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
+            ->latest()
+            ->first();
+    }
 
     // Add membership application data if available
     if ($membershipApplication) {
