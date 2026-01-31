@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\PaymentController;
@@ -105,12 +104,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/self-declarations/{selfDeclaration}/approve', [SelfDeclarationController::class, 'approve']);
     Route::post('/self-declarations/{selfDeclaration}/reject', [SelfDeclarationController::class, 'reject']);
 
-    // File serving routes
-    Route::get('/self-declarations/{selfDeclaration}/signature', [FileController::class, 'serveSelfDeclarationSignature']);
-    Route::get('/payments/{payment}/proof', [FileController::class, 'servePaymentProof']);
-    Route::get('/payments/{payment}/receipt', [FileController::class, 'serveMoneyReceipt']);
-    Route::get('/membership-applications/{membershipApplication}/studentship-proof', [FileController::class, 'serveStudentshipProof']);
-    Route::get('/membership-applications/{membershipApplication}/receipt', [FileController::class, 'serveReceipt']);
-    Route::get('/membership-applications/{membershipApplication}/photo', [FileController::class, 'servePhoto']);
-    Route::get('/membership-applications/{membershipApplication}/signature', [FileController::class, 'serveSignature']);
 });

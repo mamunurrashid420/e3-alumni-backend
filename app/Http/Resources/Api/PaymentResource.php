@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentResource extends JsonResource
 {
@@ -22,8 +23,8 @@ class PaymentResource extends JsonResource
             'mobile_number' => $this->mobile_number,
             'payment_purpose' => $this->payment_purpose?->value,
             'payment_amount' => $this->payment_amount,
-            'payment_proof_file' => $this->payment_proof_file_url,
-            'receipt_file' => $this->receipt_file_url,
+            'payment_proof_file' => $this->payment_proof_file ? Storage::disk('public')->url($this->payment_proof_file) : null,
+            'receipt_file' => $this->receipt_file ? Storage::disk('public')->url($this->receipt_file) : null,
             'status' => $this->status?->value,
             'approved_by' => $this->approved_by,
             'approved_at' => $this->approved_at?->toIso8601String(),

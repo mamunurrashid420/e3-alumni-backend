@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class SelfDeclarationResource extends JsonResource
 {
@@ -26,7 +27,7 @@ class SelfDeclarationResource extends JsonResource
                 ];
             }),
             'name' => $this->name,
-            'signature_file' => $this->signature_file_url,
+            'signature_file' => $this->signature_file ? Storage::disk('public')->url($this->signature_file) : null,
             'secondary_member_type' => $this->whenLoaded('secondaryMemberType', function () {
                 return [
                     'id' => $this->secondaryMemberType->id,

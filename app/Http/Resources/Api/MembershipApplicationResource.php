@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class MembershipApplicationResource extends JsonResource
 {
@@ -25,7 +26,7 @@ class MembershipApplicationResource extends JsonResource
             'jsc_year' => $this->jsc_year,
             'ssc_year' => $this->ssc_year,
             'studentship_proof_type' => $this->studentship_proof_type?->value,
-            'studentship_proof_file' => $this->studentship_proof_file_url,
+            'studentship_proof_file' => $this->studentship_proof_file ? Storage::disk('public')->url($this->studentship_proof_file) : null,
             'highest_educational_degree' => $this->highest_educational_degree,
             'present_address' => $this->present_address,
             'permanent_address' => $this->permanent_address,
@@ -40,9 +41,9 @@ class MembershipApplicationResource extends JsonResource
             'yearly_fee' => $this->yearly_fee,
             'payment_years' => $this->payment_years,
             'total_paid_amount' => $this->total_paid_amount,
-            'receipt_file' => $this->receipt_file_url,
-            'photo' => $this->photo_url,
-            'signature' => $this->signature_url,
+            'receipt_file' => $this->receipt_file ? Storage::disk('public')->url($this->receipt_file) : null,
+            'photo' => $this->photo ? Storage::disk('public')->url($this->photo) : null,
+            'signature' => $this->signature ? Storage::disk('public')->url($this->signature) : null,
             'status' => $this->status?->value,
             'approved_by' => $this->approved_by,
             'approved_at' => $this->approved_at?->toIso8601String(),
