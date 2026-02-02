@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             MemberTypeSeeder::class,
+            ScholarshipSeeder::class,
         ]);
 
         // Create super admin

@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicMemberController;
+use App\Http\Controllers\Api\ScholarshipApplicationController;
+use App\Http\Controllers\Api\ScholarshipController;
 use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
@@ -30,6 +32,12 @@ Route::post('/membership-applications', [MembershipApplicationController::class,
 
 // Member types route (public)
 Route::get('/member-types', [MemberTypeController::class, 'index']);
+
+// Scholarships (public read active; index checks auth for admin)
+Route::get('/scholarships', [ScholarshipController::class, 'index']);
+
+// Scholarship application (public submit; user_id set if authenticated)
+Route::post('/scholarship-applications', [ScholarshipApplicationController::class, 'store']);
 
 // About Us content (public read)
 Route::get('/about/members', [PublicMemberController::class, 'index']);
@@ -128,4 +136,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/downloads/{download}', [DownloadController::class, 'show']);
     Route::put('/downloads/{download}', [DownloadController::class, 'update']);
     Route::delete('/downloads/{download}', [DownloadController::class, 'destroy']);
+
+    // Scholarships (super admin only)
+    Route::post('/scholarships', [ScholarshipController::class, 'store']);
+    Route::get('/scholarships/{scholarship}', [ScholarshipController::class, 'show']);
+    Route::put('/scholarships/{scholarship}', [ScholarshipController::class, 'update']);
+    Route::delete('/scholarships/{scholarship}', [ScholarshipController::class, 'destroy']);
+
+    // Scholarship applications (super admin only)
+    Route::get('/scholarship-applications', [ScholarshipApplicationController::class, 'index']);
+    Route::get('/scholarship-applications/{scholarshipApplication}', [ScholarshipApplicationController::class, 'show']);
+    Route::post('/scholarship-applications/{scholarshipApplication}/approve', [ScholarshipApplicationController::class, 'approve']);
+    Route::post('/scholarship-applications/{scholarshipApplication}/reject', [ScholarshipApplicationController::class, 'reject']);
 });
