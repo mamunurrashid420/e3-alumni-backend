@@ -8,6 +8,7 @@ use App\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -64,6 +65,14 @@ class User extends Authenticatable
     public function secondaryMemberType(): BelongsTo
     {
         return $this->belongsTo(MemberType::class, 'secondary_member_type_id');
+    }
+
+    /**
+     * Get the member profile (1:1 for members; created from approved application).
+     */
+    public function memberProfile(): HasOne
+    {
+        return $this->hasOne(MemberProfile::class);
     }
 
     /**

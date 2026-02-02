@@ -12,50 +12,12 @@ use App\Http\Controllers\Api\PublicMemberController;
 use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    $user = $request->user();
-
-    if (! $user) {
-        return response()->json(['message' => 'Unauthenticated'], 401);
-    }
-
-    $user->load('secondaryMemberType');
-
-    // Use UserResource
-    $userResource = new \App\Http\Resources\Api\UserResource($user);
-    $userData = $userResource->toArray($request);
-
-    // Get membership application data (check by email or phone, matching User model logic)
-    $membershipApplication = null;
-    if ($user->email) {
-        $membershipApplication = \App\Models\MembershipApplication::where('email', $user->email)
-            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
-            ->latest()
-            ->first();
-    }
-
-    if (! $membershipApplication && $user->phone) {
-        $membershipApplication = \App\Models\MembershipApplication::where('mobile_number', $user->phone)
-            ->where('status', \App\Enums\MembershipApplicationStatus::Approved)
-            ->latest()
-            ->first();
-    }
-
-    // Add membership application data if available
-    if ($membershipApplication) {
-        $membershipApplicationResource = new \App\Http\Resources\Api\MembershipApplicationResource($membershipApplication);
-        $userData['membership_application'] = $membershipApplicationResource->toArray($request);
-    } else {
-        $userData['membership_application'] = null;
-    }
-
-    return response()->json($userData);
-})->middleware('auth:sanctum');
+Route::get('/user', [UserController::class, 'showCurrentUser'])->middleware('auth:sanctum');
 
 Route::put('/user', [UserController::class, 'updateProfile'])->middleware('auth:sanctum');
+Route::put('/user/profile', [UserController::class, 'updateMemberProfile'])->middleware('auth:sanctum');
 
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -101,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/members', [UserController::class, 'index']);
     Route::get('/members/{user}', [UserController::class, 'show']);
     Route::put('/members/{user}', [UserController::class, 'update']);
+    Route::put('/members/{user}/profile', [UserController::class, 'updateMemberProfileForMember']);
     Route::post('/members/{user}/resend-sms', [UserController::class, 'resendSms']);
 
     // Payment routes (super admin only)

@@ -2,12 +2,14 @@
 
 use App\Enums\MembershipApplicationStatus;
 use App\Mail\MembershipApprovedMail;
+use App\Models\MemberProfile;
 use App\Models\MembershipApplication;
 use App\Models\User;
 use App\PrimaryMemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -249,6 +251,43 @@ it('allows super admin to approve application and create user', function () {
     Mail::assertSent(MembershipApprovedMail::class, function ($mail) {
         return $mail->user->email === 'test@example.com';
     });
+});
+
+it('copies application photo and signature to member-profiles path on approve', function () {
+    Mail::fake();
+
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    // Simulate application file uploads (same paths the store() controller would create)
+    $photoPath = 'membership-applications/photo_'.strtolower(Str::random(20)).'.jpg';
+    $signaturePath = 'membership-applications/signature_'.strtolower(Str::random(20)).'.png';
+    Storage::disk('public')->put($photoPath, 'fake photo content');
+    Storage::disk('public')->put($signaturePath, 'fake signature content');
+
+    $application = MembershipApplication::factory()->create([
+        'email' => 'photo-test@example.com',
+        'membership_type' => PrimaryMemberType::General,
+        'ssc_year' => 2020,
+        'photo' => $photoPath,
+        'signature' => $signaturePath,
+    ]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/membership-applications/{$application->id}/approve")
+        ->assertSuccessful();
+
+    $user = User::where('email', 'photo-test@example.com')->first();
+    expect($user)->not->toBeNull();
+
+    $profile = MemberProfile::where('user_id', $user->id)->first();
+    expect($profile)->not->toBeNull();
+    expect($profile->photo)->not->toBeNull()
+        ->and($profile->photo)->toStartWith(MemberProfile::STORAGE_DIR.'/'.$user->id.'/');
+    expect($profile->signature)->not->toBeNull()
+        ->and($profile->signature)->toStartWith(MemberProfile::STORAGE_DIR.'/'.$user->id.'/');
+
+    expect(Storage::disk('public')->exists($profile->photo))->toBeTrue();
+    expect(Storage::disk('public')->exists($profile->signature))->toBeTrue();
 });
 
 it('generates unique member IDs correctly', function () {

@@ -8,6 +8,7 @@ use App\Http\Requests\Api\StoreMembershipApplicationRequest;
 use App\Http\Requests\Api\UpdateMembershipApplicationRequest;
 use App\Http\Resources\Api\MembershipApplicationResource;
 use App\Mail\MembershipApprovedMail;
+use App\Models\MemberProfile;
 use App\Models\MembershipApplication;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
@@ -218,6 +219,33 @@ class MembershipApplicationController extends Controller
             'role' => UserRole::Member,
             'primary_member_type' => $membershipApplication->membership_type,
             'member_id' => $memberId,
+        ]);
+
+        // Create member profile from application; copy photo/signature to member-profiles path
+        $files = MemberProfile::copyFilesFromApplicationPath(
+            $membershipApplication->photo,
+            $membershipApplication->signature,
+            $user->id
+        );
+
+        MemberProfile::create([
+            'user_id' => $user->id,
+            'name_bangla' => $membershipApplication->name_bangla,
+            'father_name' => $membershipApplication->father_name,
+            'mother_name' => $membershipApplication->mother_name,
+            'gender' => $membershipApplication->gender?->value,
+            'jsc_year' => $membershipApplication->jsc_year,
+            'ssc_year' => $membershipApplication->ssc_year,
+            'highest_educational_degree' => $membershipApplication->highest_educational_degree,
+            'present_address' => $membershipApplication->present_address,
+            'permanent_address' => $membershipApplication->permanent_address,
+            'profession' => $membershipApplication->profession,
+            'designation' => $membershipApplication->designation,
+            'institute_name' => $membershipApplication->institute_name,
+            't_shirt_size' => $membershipApplication->t_shirt_size?->value,
+            'blood_group' => $membershipApplication->blood_group?->value,
+            'photo' => $files['photo'],
+            'signature' => $files['signature'],
         ]);
 
         // Update application status

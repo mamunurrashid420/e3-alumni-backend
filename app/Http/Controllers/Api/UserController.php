@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\MembershipApplicationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\UpdateMemberProfileRequest;
 use App\Http\Requests\Api\UpdateMemberRequest;
 use App\Http\Requests\Api\UpdateProfileRequest;
-use App\Http\Resources\Api\MembershipApplicationResource;
+use App\Http\Resources\Api\MemberProfileResource;
 use App\Http\Resources\Api\UserResource;
-use App\Models\MembershipApplication;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
 use App\UserRole;
@@ -18,6 +17,18 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    /**
+     * Return the authenticated user with profile (GET /user).
+     */
+    public function showCurrentUser(Request $request): JsonResponse
+    {
+        if (! $request->user()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        return response()->json($this->currentUserResponse($request));
+    }
+
     /**
      * Update the authenticated user's profile (name, email, phone).
      */
@@ -30,36 +41,37 @@ class UserController extends Controller
     }
 
     /**
-     * Build the same response shape as GET /user (UserResource + membership_application).
+     * Update the authenticated user's member profile (address, profession, etc.).
+     */
+    public function updateMemberProfile(UpdateMemberProfileRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->load('memberProfile');
+
+        if (! $user->memberProfile) {
+            return response()->json(['message' => 'Member profile not found.'], 404);
+        }
+
+        $user->memberProfile->update($request->validated());
+
+        return response()->json($this->currentUserResponse($request));
+    }
+
+    /**
+     * Build the response shape for GET /user (UserResource + profile from member_profiles).
      *
      * @return array<string, mixed>
      */
     private function currentUserResponse(Request $request): array
     {
         $user = $request->user();
-        $user->load('secondaryMemberType');
+        $user->load(['secondaryMemberType', 'memberProfile']);
 
         $userResource = new UserResource($user);
         $userData = $userResource->toArray($request);
 
-        $membershipApplication = null;
-        if ($user->email) {
-            $membershipApplication = MembershipApplication::query()
-                ->where('email', $user->email)
-                ->where('status', MembershipApplicationStatus::Approved)
-                ->latest()
-                ->first();
-        }
-        if (! $membershipApplication && $user->phone) {
-            $membershipApplication = MembershipApplication::query()
-                ->where('mobile_number', $user->phone)
-                ->where('status', MembershipApplicationStatus::Approved)
-                ->latest()
-                ->first();
-        }
-
-        $userData['membership_application'] = $membershipApplication
-            ? (new MembershipApplicationResource($membershipApplication))->toArray($request)
+        $userData['profile'] = $user->memberProfile
+            ? (new MemberProfileResource($user->memberProfile))->toArray($request)
             : null;
 
         return $userData;
@@ -74,7 +86,7 @@ class UserController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $query = User::query()->where('role', UserRole::Member)->with('secondaryMemberType');
+        $query = User::query()->where('role', UserRole::Member)->with(['secondaryMemberType', 'memberProfile']);
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -108,7 +120,31 @@ class UserController extends Controller
             abort(404, 'Member not found.');
         }
 
-        $user->load('secondaryMemberType');
+        $user->load(['secondaryMemberType', 'memberProfile']);
+
+        return (new UserResource($user))->response();
+    }
+
+    /**
+     * Update the specified member's profile (address, profession, etc.). Super admin only.
+     */
+    public function updateMemberProfileForMember(UpdateMemberProfileRequest $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+
+        $user->load('memberProfile');
+
+        if (! $user->memberProfile) {
+            return response()->json(['message' => 'Member profile not found.'], 404);
+        }
+
+        $user->memberProfile->update($request->validated());
+        $user->load(['secondaryMemberType', 'memberProfile']);
 
         return (new UserResource($user))->response();
     }

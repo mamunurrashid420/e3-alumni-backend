@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MemberProfile;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -84,6 +85,44 @@ it('allows keeping own phone when updating profile', function () {
 
     $response->assertSuccessful()
         ->assertJsonPath('phone', '01700000001');
+});
+
+it('allows authenticated member to update own member profile', function () {
+    $user = User::factory()->member()->create(['phone' => '01700000001']);
+    MemberProfile::create([
+        'user_id' => $user->id,
+        'present_address' => 'Old Address',
+        'profession' => 'Old Profession',
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->putJson('/api/user/profile', [
+            'present_address' => 'New Address',
+            'permanent_address' => 'Permanent Address',
+            'profession' => 'Engineer',
+            'designation' => 'Senior Dev',
+        ]);
+
+    $response->assertSuccessful()
+        ->assertJsonPath('profile.present_address', 'New Address')
+        ->assertJsonPath('profile.profession', 'Engineer')
+        ->assertJsonPath('profile.designation', 'Senior Dev');
+
+    $user->memberProfile->refresh();
+    expect($user->memberProfile->present_address)->toBe('New Address');
+    expect($user->memberProfile->profession)->toBe('Engineer');
+});
+
+it('returns 404 when updating member profile and user has no profile', function () {
+    $user = User::factory()->member()->create(['phone' => '01700000001']);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->putJson('/api/user/profile', [
+            'present_address' => 'Some Address',
+            'profession' => 'Engineer',
+        ]);
+
+    $response->assertNotFound();
 });
 
 it('rejects unauthenticated profile update', function () {

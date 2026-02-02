@@ -21,6 +21,26 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Testing
+
+Tests use a **separate PostgreSQL database** (`alumni_test`) so migrations and behaviour match production. Create it once, then run tests:
+
+```bash
+# Create the test database (same host/user as DB_* in .env)
+psql -U your_db_user -h 127.0.0.1 -c "CREATE DATABASE alumni_test;"
+
+# Run tests
+php artisan test
+```
+
+To use a different test database name, set `DB_DATABASE` in a `.env.testing` file or before running tests (e.g. `DB_DATABASE=my_test php artisan test` on Unix).
+
+**One-time backfill** for existing members after deploying `member_profiles`:
+
+```bash
+php artisan members:backfill-profiles
+```
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
