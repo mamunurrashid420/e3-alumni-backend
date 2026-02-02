@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\HonorBoardEntryController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicMemberController;
 use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
@@ -65,6 +66,7 @@ Route::post('/membership-applications', [MembershipApplicationController::class,
 Route::get('/member-types', [MemberTypeController::class, 'index']);
 
 // About Us content (public read)
+Route::get('/about/members', [PublicMemberController::class, 'index']);
 Route::get('/about/convening-committee', [ConveningCommitteeMemberController::class, 'index']);
 Route::get('/about/advisory-body', [AdvisoryBodyMemberController::class, 'index']);
 Route::get('/about/honor-board', [HonorBoardEntryController::class, 'index']);

@@ -6,9 +6,48 @@ use App\Models\BatchRepresentative;
 use App\Models\ConveningCommitteeMember;
 use App\Models\HonorBoardEntry;
 use App\Models\User;
+use App\PrimaryMemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+// --- Public Members (paginated) ---
+
+it('returns paginated members list publicly', function () {
+    User::factory()->member()->create(['member_id' => 'G-2000-0001', 'name' => 'Alice Member']);
+    User::factory()->member()->create(['member_id' => 'LT-2001-0002', 'name' => 'Bob Member']);
+    User::factory()->superAdmin()->create(); // should not appear
+
+    $response = $this->getJson('/api/about/members');
+
+    $response->assertSuccessful()
+        ->assertJsonStructure([
+            'data' => [['id', 'name', 'member_id', 'primary_member_type', 'designation', 'profession']],
+            'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+            'links' => ['first', 'last', 'prev', 'next'],
+        ])
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.name', 'Bob Member')
+        ->assertJsonPath('data.1.name', 'Alice Member');
+});
+
+it('returns members filtered by primary_member_type when query param provided', function () {
+    User::factory()->member()->create(['member_id' => 'G-2000-0001', 'primary_member_type' => PrimaryMemberType::General]);
+    User::factory()->member()->create(['member_id' => 'LT-2001-0002', 'primary_member_type' => PrimaryMemberType::Lifetime]);
+
+    $response = $this->getJson('/api/about/members?primary_member_type='.PrimaryMemberType::General->value);
+
+    $response->assertSuccessful()->assertJsonCount(1, 'data')->assertJsonPath('data.0.primary_member_type', PrimaryMemberType::General->value);
+});
+
+it('excludes users without member_id from public members list', function () {
+    User::factory()->member()->create(['member_id' => null, 'name' => 'No Id']);
+    User::factory()->member()->create(['member_id' => 'G-2000-0001', 'name' => 'With Id']);
+
+    $response = $this->getJson('/api/about/members');
+
+    $response->assertSuccessful()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'With Id');
+});
 
 // --- Convening Committee ---
 
