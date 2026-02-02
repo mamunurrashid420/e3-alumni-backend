@@ -24,11 +24,20 @@ class PublicMemberResource extends JsonResource
             $photoUrl = Storage::disk('public')->url($application->photo);
         }
 
+        $secondaryType = $this->relationLoaded('secondaryMemberType')
+            ? $this->getRelation('secondaryMemberType')
+            : null;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'member_id' => $this->member_id,
             'primary_member_type' => $this->primary_member_type?->value,
+            'secondary_member_type' => $secondaryType ? [
+                'id' => $secondaryType->id,
+                'name' => $secondaryType->name,
+                'description' => $secondaryType->description,
+            ] : null,
             'designation' => $application?->designation,
             'profession' => $application?->profession,
             'photo' => $photoUrl,

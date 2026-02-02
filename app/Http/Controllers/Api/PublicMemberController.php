@@ -20,7 +20,8 @@ class PublicMemberController extends Controller
     {
         $query = User::query()
             ->where('role', UserRole::Member)
-            ->whereNotNull('member_id');
+            ->whereNotNull('member_id')
+            ->with('secondaryMemberType');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -32,6 +33,14 @@ class PublicMemberController extends Controller
 
         if ($request->filled('primary_member_type')) {
             $query->where('primary_member_type', $request->primary_member_type);
+        }
+
+        if ($request->boolean('has_secondary_type')) {
+            $query->whereNotNull('secondary_member_type_id');
+        }
+
+        if ($request->filled('secondary_member_type_id')) {
+            $query->where('secondary_member_type_id', $request->secondary_member_type_id);
         }
 
         $members = $query->latest()->paginate($request->integer('per_page', 12));

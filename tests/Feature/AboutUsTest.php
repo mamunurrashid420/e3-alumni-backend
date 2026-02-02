@@ -5,6 +5,7 @@ use App\Models\AdvisoryBodyMember;
 use App\Models\BatchRepresentative;
 use App\Models\ConveningCommitteeMember;
 use App\Models\HonorBoardEntry;
+use App\Models\MemberType;
 use App\Models\User;
 use App\PrimaryMemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,6 +48,19 @@ it('excludes users without member_id from public members list', function () {
     $response = $this->getJson('/api/about/members');
 
     $response->assertSuccessful()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'With Id');
+});
+
+it('returns only members with secondary type when has_secondary_type is true', function () {
+    $memberType = MemberType::factory()->create(['name' => 'Executive']);
+    User::factory()->member()->create(['member_id' => 'G-2000-0001', 'name' => 'Without Secondary']);
+    User::factory()->member()->withSecondaryMemberType($memberType->id)->create(['member_id' => 'G-2000-0002', 'name' => 'With Secondary']);
+
+    $response = $this->getJson('/api/about/members?has_secondary_type=1');
+
+    $response->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'With Secondary')
+        ->assertJsonPath('data.0.secondary_member_type.name', 'Executive');
 });
 
 // --- Convening Committee ---
