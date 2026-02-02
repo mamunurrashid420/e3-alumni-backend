@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchRepresentativeController;
 use App\Http\Controllers\Api\ConveningCommitteeMemberController;
 use App\Http\Controllers\Api\DownloadController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\HonorBoardEntryController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
@@ -43,6 +44,12 @@ Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo
 
 // Downloads (public read)
 Route::get('/downloads', [DownloadController::class, 'index']);
+
+// Events (public read)
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{event}/registrations', [EventController::class, 'registrations'])->middleware('auth:sanctum');
+Route::get('/events/{event}', [EventController::class, 'show']);
+Route::post('/events/{event}/register-guest', [EventController::class, 'registerGuest']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -106,6 +113,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'show']);
     Route::put('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'update']);
     Route::delete('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'destroy']);
+
+    // Event registration (member only)
+    Route::post('/events/{event}/register', [EventController::class, 'register']);
+    Route::delete('/events/{event}/register', [EventController::class, 'unregister']);
+
+    // Events (super admin only)
+    Route::post('/events', [EventController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
+    Route::delete('/events/{event}', [EventController::class, 'destroy']);
 
     // Downloads (super admin only)
     Route::post('/downloads', [DownloadController::class, 'store']);
