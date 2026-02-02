@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\MembershipApplicationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\UpdateMemberRequest;
+use App\Http\Requests\Api\UpdateProfileRequest;
+use App\Http\Resources\Api\MembershipApplicationResource;
 use App\Http\Resources\Api\UserResource;
+use App\Models\MembershipApplication;
 use App\Models\User;
-use App\UserRole;
 use App\Notifications\MembershipApprovedSms;
+use App\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,11 +19,58 @@ use Illuminate\Support\Facades\Hash;
 class UserController extends Controller
 {
     /**
+     * Update the authenticated user's profile (name, email, phone).
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->update($request->validated());
+
+        return response()->json($this->currentUserResponse($request));
+    }
+
+    /**
+     * Build the same response shape as GET /user (UserResource + membership_application).
+     *
+     * @return array<string, mixed>
+     */
+    private function currentUserResponse(Request $request): array
+    {
+        $user = $request->user();
+        $user->load('secondaryMemberType');
+
+        $userResource = new UserResource($user);
+        $userData = $userResource->toArray($request);
+
+        $membershipApplication = null;
+        if ($user->email) {
+            $membershipApplication = MembershipApplication::query()
+                ->where('email', $user->email)
+                ->where('status', MembershipApplicationStatus::Approved)
+                ->latest()
+                ->first();
+        }
+        if (! $membershipApplication && $user->phone) {
+            $membershipApplication = MembershipApplication::query()
+                ->where('mobile_number', $user->phone)
+                ->where('status', MembershipApplicationStatus::Approved)
+                ->latest()
+                ->first();
+        }
+
+        $userData['membership_application'] = $membershipApplication
+            ? (new MembershipApplicationResource($membershipApplication))->toArray($request)
+            : null;
+
+        return $userData;
+    }
+
+    /**
      * Display a listing of all member users.
      */
     public function index(Request $request): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -27,9 +79,9 @@ class UserController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
-                    ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($search) . '%'])
-                    ->orWhereRaw('LOWER(member_id) LIKE ?', ['%' . strtolower($search) . '%']);
+                $q->whereRaw('LOWER(name) LIKE ?', ['%'.strtolower($search).'%'])
+                    ->orWhereRaw('LOWER(email) LIKE ?', ['%'.strtolower($search).'%'])
+                    ->orWhereRaw('LOWER(member_id) LIKE ?', ['%'.strtolower($search).'%']);
             });
         }
 
@@ -47,12 +99,12 @@ class UserController extends Controller
      */
     public function show(Request $request, User $user): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
         // Ensure the user is a member, not a super admin
-        if (!$user->isMember()) {
+        if (! $user->isMember()) {
             abort(404, 'Member not found.');
         }
 
@@ -62,15 +114,41 @@ class UserController extends Controller
     }
 
     /**
+     * Update the specified member (name, email, phone). Super admin only.
+     * Returns phone_changed: true when the stored phone was changed so admin can prompt to resend SMS.
+     */
+    public function update(UpdateMemberRequest $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+
+        $validated = $request->validated();
+        $phoneBefore = $user->phone;
+        $user->update($validated);
+        $phoneChanged = $phoneBefore !== $user->phone;
+
+        $user->load('secondaryMemberType');
+        $response = (new UserResource($user))->response();
+        $data = $response->getData(true);
+        $data['phone_changed'] = $phoneChanged;
+
+        return response()->json($data);
+    }
+
+    /**
      * Resend credentials via SMS to the specified member.
      */
     public function resendSms(Request $request, User $user): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
-        if (!$user->phone) {
+        if (! $user->phone) {
             return response()->json([
                 'message' => 'User does not have a phone number.',
             ], 422);
