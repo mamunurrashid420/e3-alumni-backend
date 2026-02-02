@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdvisoryBodyMemberController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchRepresentativeController;
 use App\Http\Controllers\Api\ConveningCommitteeMemberController;
+use App\Http\Controllers\Api\DownloadController;
 use App\Http\Controllers\Api\HonorBoardEntryController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
@@ -39,6 +40,9 @@ Route::get('/about/batch-representatives', [BatchRepresentativeController::class
 // Payment routes (public)
 Route::post('/payments', [PaymentController::class, 'store']);
 Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo']);
+
+// Downloads (public read)
+Route::get('/downloads', [DownloadController::class, 'index']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -102,4 +106,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'show']);
     Route::put('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'update']);
     Route::delete('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'destroy']);
+
+    // Downloads (super admin only)
+    Route::post('/downloads', [DownloadController::class, 'store']);
+    Route::get('/downloads/{download}', [DownloadController::class, 'show']);
+    Route::put('/downloads/{download}', [DownloadController::class, 'update']);
+    Route::delete('/downloads/{download}', [DownloadController::class, 'destroy']);
 });
