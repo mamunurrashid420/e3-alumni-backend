@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\AdvisoryBodyMemberController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BatchRepresentativeController;
+use App\Http\Controllers\Api\ConveningCommitteeMemberController;
+use App\Http\Controllers\Api\HonorBoardEntryController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\PaymentController;
@@ -60,6 +64,12 @@ Route::post('/membership-applications', [MembershipApplicationController::class,
 // Member types route (public)
 Route::get('/member-types', [MemberTypeController::class, 'index']);
 
+// About Us content (public read)
+Route::get('/about/convening-committee', [ConveningCommitteeMemberController::class, 'index']);
+Route::get('/about/advisory-body', [AdvisoryBodyMemberController::class, 'index']);
+Route::get('/about/honor-board', [HonorBoardEntryController::class, 'index']);
+Route::get('/about/batch-representatives', [BatchRepresentativeController::class, 'index']);
+
 // Payment routes (public)
 Route::post('/payments', [PaymentController::class, 'store']);
 Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo']);
@@ -104,4 +114,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/self-declarations/{selfDeclaration}/approve', [SelfDeclarationController::class, 'approve']);
     Route::post('/self-declarations/{selfDeclaration}/reject', [SelfDeclarationController::class, 'reject']);
 
+    // About Us content (super admin only)
+    Route::post('/about/convening-committee', [ConveningCommitteeMemberController::class, 'store']);
+    Route::get('/about/convening-committee/{conveningCommitteeMember}', [ConveningCommitteeMemberController::class, 'show']);
+    Route::put('/about/convening-committee/{conveningCommitteeMember}', [ConveningCommitteeMemberController::class, 'update']);
+    Route::delete('/about/convening-committee/{conveningCommitteeMember}', [ConveningCommitteeMemberController::class, 'destroy']);
+
+    Route::post('/about/advisory-body', [AdvisoryBodyMemberController::class, 'store']);
+    Route::get('/about/advisory-body/{advisoryBodyMember}', [AdvisoryBodyMemberController::class, 'show']);
+    Route::put('/about/advisory-body/{advisoryBodyMember}', [AdvisoryBodyMemberController::class, 'update']);
+    Route::delete('/about/advisory-body/{advisoryBodyMember}', [AdvisoryBodyMemberController::class, 'destroy']);
+
+    Route::post('/about/honor-board', [HonorBoardEntryController::class, 'store']);
+    Route::get('/about/honor-board/{honorBoardEntry}', [HonorBoardEntryController::class, 'show']);
+    Route::put('/about/honor-board/{honorBoardEntry}', [HonorBoardEntryController::class, 'update']);
+    Route::delete('/about/honor-board/{honorBoardEntry}', [HonorBoardEntryController::class, 'destroy']);
+
+    Route::post('/about/batch-representatives', [BatchRepresentativeController::class, 'store']);
+    Route::get('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'show']);
+    Route::put('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'update']);
+    Route::delete('/about/batch-representatives/{batchRepresentative}', [BatchRepresentativeController::class, 'destroy']);
 });
