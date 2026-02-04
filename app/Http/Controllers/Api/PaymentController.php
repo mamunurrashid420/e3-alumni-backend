@@ -42,7 +42,7 @@ class PaymentController extends Controller
                         'from' => null,
                         'last_page' => 1,
                         'path' => $request->url(),
-                        'per_page' => 15,
+                        'per_page' => (int) $request->integer('per_page', 15),
                         'to' => null,
                         'total' => 0,
                     ],
@@ -62,7 +62,8 @@ class PaymentController extends Controller
             }
         }
 
-        $payments = $query->latest()->paginate(15);
+        $perPage = min(10000, max(1, $request->integer('per_page', 15)));
+        $payments = $query->latest()->paginate($perPage);
 
         return PaymentResource::collection($payments)->response();
     }

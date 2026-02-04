@@ -33,6 +33,7 @@ class User extends Authenticatable
         'primary_member_type',
         'secondary_member_type_id',
         'member_id',
+        'membership_expires_at',
     ];
 
     /**
@@ -54,6 +55,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'membership_expires_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'primary_member_type' => PrimaryMemberType::class,
@@ -151,6 +153,63 @@ class User extends Authenticatable
     public function isMember(): bool
     {
         return $this->role === UserRole::Member;
+    }
+
+    /**
+     * Get the date when this member's membership expires (end of last paid year).
+     * Returns null for LIFETIME or when no approved application exists.
+     * Uses stored membership_expires_at when set; otherwise computed from approved application.
+     */
+    public function getMembershipExpiresAt(): ?\Carbon\Carbon
+    {
+        if (! $this->primary_member_type || $this->primary_member_type === PrimaryMemberType::Lifetime) {
+            return null;
+        }
+
+        if ($this->membership_expires_at !== null) {
+            return $this->membership_expires_at;
+        }
+
+        $application = $this->membershipApplication();
+        if (! $application || ! $application->approved_at) {
+            return null;
+        }
+
+        $years = (int) $application->payment_years;
+        if ($years < 1) {
+            return null;
+        }
+
+        $lastPaidYear = $application->approved_at->year + $years - 1;
+
+        return \Carbon\Carbon::createFromDate($lastPaidYear, 12, 31)->endOfDay();
+    }
+
+    /**
+     * Compute membership expiry date from approval date and number of years paid.
+     */
+    public static function computeMembershipExpiresAt(?\Carbon\Carbon $approvedAt, int $paymentYears): ?\Carbon\Carbon
+    {
+        if (! $approvedAt || $paymentYears < 1) {
+            return null;
+        }
+
+        $lastPaidYear = $approvedAt->year + $paymentYears - 1;
+
+        return \Carbon\Carbon::createFromDate($lastPaidYear, 12, 31)->endOfDay();
+    }
+
+    /**
+     * Extend membership by the given number of years from the current expiry (or from today if expired/none).
+     */
+    public function extendMembershipExpiryByYears(int $years): \Carbon\Carbon
+    {
+        $current = $this->getMembershipExpiresAt();
+        $base = ($current && $current->isFuture()) ? $current : now();
+
+        $newYear = $base->year + $years;
+
+        return \Carbon\Carbon::createFromDate($newYear, 12, 31)->endOfDay();
     }
 
     /**

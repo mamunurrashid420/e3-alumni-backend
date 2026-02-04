@@ -64,7 +64,8 @@ class ScholarshipApplicationController extends Controller
             $query->where('scholarship_id', $request->scholarship_id);
         }
 
-        $applications = $query->latest()->paginate(15);
+        $perPage = min(10000, max(1, $request->integer('per_page', 15)));
+        $applications = $query->latest()->paginate($perPage);
 
         return ScholarshipApplicationResource::collection($applications)->response();
     }

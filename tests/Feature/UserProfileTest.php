@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\MembershipApplicationStatus;
 use App\Models\MemberProfile;
+use App\Models\MembershipApplication;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
+use App\PrimaryMemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -263,4 +266,86 @@ it('sends resend sms to updated phone after admin changes member phone', functio
         ->assertSuccessful();
 
     Notification::assertSentTo($member, MembershipApprovedSms::class);
+});
+
+it('returns membership_expires_at for member with approved general application', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $member = User::factory()->member()->create([
+        'name' => 'Expiry Test Member',
+        'email' => 'expiry-member@test.com',
+        'phone' => '01711111111',
+        'member_id' => 'G-2000-0099',
+        'primary_member_type' => PrimaryMemberType::General,
+    ]);
+
+    MembershipApplication::factory()->create([
+        'email' => 'expiry-member@test.com',
+        'membership_type' => PrimaryMemberType::General,
+        'payment_years' => '3',
+        'status' => MembershipApplicationStatus::Approved,
+        'approved_at' => now()->setDate(2025, 6, 15),
+        'approved_by' => $superAdmin->id,
+    ]);
+
+    $response = $this->actingAs($superAdmin, 'sanctum')
+        ->getJson("/api/members/{$member->id}");
+
+    $response->assertSuccessful()
+        ->assertJsonPath('data.membership_expires_at', fn ($v) => str_contains((string) $v, '2027-12-31'));
+});
+
+it('returns null membership_expires_at for lifetime member', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $member = User::factory()->member()->create([
+        'name' => 'Lifetime Member',
+        'email' => 'lifetime@test.com',
+        'phone' => '01722222222',
+        'member_id' => 'LT-2000-0098',
+        'primary_member_type' => PrimaryMemberType::Lifetime,
+    ]);
+
+    $response = $this->actingAs($superAdmin, 'sanctum')
+        ->getJson("/api/members/{$member->id}");
+
+    $response->assertSuccessful()
+        ->assertJsonPath('data.membership_expires_at', null);
+});
+
+it('allows super admin to renew membership and extends expiry', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $member = User::factory()->member()->create([
+        'name' => 'Renew Test Member',
+        'email' => 'renew@test.com',
+        'phone' => '01733333333',
+        'member_id' => 'G-2000-0097',
+        'primary_member_type' => PrimaryMemberType::General,
+        'membership_expires_at' => now()->addYears(1)->endOfYear()->endOfDay(),
+    ]);
+
+    $response = $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/members/{$member->id}/renew-membership", ['years' => 2]);
+
+    $expectedYear = now()->addYears(3)->year;
+    $response->assertSuccessful()
+        ->assertJsonPath('data.membership_expires_at', fn ($v) => $v !== null && str_contains((string) $v, (string) $expectedYear));
+
+    $member->refresh();
+    expect($member->membership_expires_at->format('Y'))->toBe((string) $expectedYear);
+});
+
+it('rejects renew membership for lifetime member', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $member = User::factory()->member()->create([
+        'name' => 'Lifetime Member',
+        'email' => 'lifetime-renew@test.com',
+        'phone' => '01744444444',
+        'member_id' => 'LT-2000-0096',
+        'primary_member_type' => PrimaryMemberType::Lifetime,
+    ]);
+
+    $response = $this->actingAs($superAdmin, 'sanctum')
+        ->postJson("/api/members/{$member->id}/renew-membership", ['years' => 1]);
+
+    $response->assertUnprocessable()
+        ->assertJsonPath('message', 'Lifetime membership does not expire and cannot be renewed.');
 });

@@ -82,6 +82,8 @@ class MigrateMemberProfilesFromApplications extends Command
 
         $this->info("Created {$created} member profile(s). Skipped {$skipped} (already had profile). {$noApplication} member(s) had no approved application.");
 
+        $this->info('You can backfill membership expiry for existing members with: php artisan members:backfill-expiry');
+
         return self::SUCCESS;
     }
 }

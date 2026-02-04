@@ -29,7 +29,8 @@ class SelfDeclarationController extends Controller
             $query->where('status', $request->status);
         }
 
-        $selfDeclarations = $query->latest()->paginate(15);
+        $perPage = min(10000, max(1, $request->integer('per_page', 15)));
+        $selfDeclarations = $query->latest()->paginate($perPage);
 
         return SelfDeclarationResource::collection($selfDeclarations)->response();
     }

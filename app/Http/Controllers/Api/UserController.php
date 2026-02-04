@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\RenewMembershipRequest;
 use App\Http\Requests\Api\UpdateMemberProfileRequest;
 use App\Http\Requests\Api\UpdateMemberRequest;
 use App\Http\Requests\Api\UpdateProfileRequest;
@@ -120,7 +121,8 @@ class UserController extends Controller
             $query->where('primary_member_type', $request->primary_member_type);
         }
 
-        $members = $query->latest()->paginate(15);
+        $perPage = min(10000, max(1, $request->integer('per_page', 15)));
+        $members = $query->latest()->paginate($perPage);
 
         return UserResource::collection($members)->response();
     }
@@ -222,5 +224,31 @@ class UserController extends Controller
         return response()->json([
             'message' => 'SMS sent successfully.',
         ]);
+    }
+
+    /**
+     * Renew membership by extending the expiry date. Super admin only.
+     * Only applicable to GENERAL and ASSOCIATE members (not LIFETIME).
+     */
+    public function renewMembership(RenewMembershipRequest $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+        if ($user->primary_member_type === \App\PrimaryMemberType::Lifetime) {
+            return response()->json([
+                'message' => 'Lifetime membership does not expire and cannot be renewed.',
+            ], 422);
+        }
+
+        $years = (int) $request->validated('years');
+        $newExpiresAt = $user->extendMembershipExpiryByYears($years);
+        $user->update(['membership_expires_at' => $newExpiresAt]);
+        $user->load(['secondaryMemberType', 'memberProfile']);
+
+        return (new UserResource($user))->response();
     }
 }

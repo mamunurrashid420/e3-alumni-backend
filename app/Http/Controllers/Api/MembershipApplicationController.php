@@ -37,7 +37,8 @@ class MembershipApplicationController extends Controller
             $query->where('status', $request->status);
         }
 
-        $applications = $query->latest()->paginate(15);
+        $perPage = min(10000, max(1, $request->integer('per_page', 15)));
+        $applications = $query->latest()->paginate($perPage);
 
         return MembershipApplicationResource::collection($applications)->response();
     }
@@ -249,11 +250,23 @@ class MembershipApplicationController extends Controller
         ]);
 
         // Update application status
+        $approvedAt = now();
         $membershipApplication->update([
             'status' => MembershipApplicationStatus::Approved,
             'approved_by' => $request->user()->id,
-            'approved_at' => now(),
+            'approved_at' => $approvedAt,
         ]);
+
+        // Set membership expiry for GENERAL/ASSOCIATE (LIFETIME has no expiry)
+        if ($membershipApplication->membership_type !== \App\PrimaryMemberType::Lifetime) {
+            $expiresAt = User::computeMembershipExpiresAt(
+                $approvedAt,
+                (int) $membershipApplication->payment_years
+            );
+            if ($expiresAt) {
+                $user->update(['membership_expires_at' => $expiresAt]);
+            }
+        }
 
         // Send credentials via email if available
         if ($user->email) {
