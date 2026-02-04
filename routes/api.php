@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ScholarshipController;
 use App\Http\Controllers\Api\SelfDeclarationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Middleware\OptionalSanctumAuth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', [UserController::class, 'showCurrentUser'])->middleware('auth:sanctum');
@@ -56,7 +57,7 @@ Route::get('/downloads', [DownloadController::class, 'index']);
 // Events (public read)
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}/registrations', [EventController::class, 'registrations'])->middleware('auth:sanctum');
-Route::get('/events/{event}', [EventController::class, 'show']);
+Route::get('/events/{event}', [EventController::class, 'show'])->middleware(OptionalSanctumAuth::class);
 Route::post('/events/{event}/register-guest', [EventController::class, 'registerGuest']);
 
 // Protected routes
