@@ -18,6 +18,7 @@ class EventListResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'description' => $this->description,
             'location' => $this->location,
             'start_at' => $this->start_at->toIso8601String(),
             'end_at' => $this->end_at->toIso8601String(),
