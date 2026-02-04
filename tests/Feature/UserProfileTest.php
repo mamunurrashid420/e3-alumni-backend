@@ -291,7 +291,7 @@ it('returns membership_expires_at for member with approved general application',
         ->getJson("/api/members/{$member->id}");
 
     $response->assertSuccessful()
-        ->assertJsonPath('data.membership_expires_at', fn ($v) => str_contains((string) $v, '2027-12-31'));
+        ->assertJsonPath('data.membership_expires_at', fn ($v) => str_contains((string) $v, '2028-06-15'));
 });
 
 it('returns null membership_expires_at for lifetime member', function () {
@@ -319,7 +319,7 @@ it('allows super admin to renew membership and extends expiry', function () {
         'phone' => '01733333333',
         'member_id' => 'G-2000-0097',
         'primary_member_type' => PrimaryMemberType::General,
-        'membership_expires_at' => now()->addYears(1)->endOfYear()->endOfDay(),
+        'membership_expires_at' => now()->addYears(1),
     ]);
 
     $response = $this->actingAs($superAdmin, 'sanctum')
@@ -327,10 +327,13 @@ it('allows super admin to renew membership and extends expiry', function () {
 
     $expectedYear = now()->addYears(3)->year;
     $response->assertSuccessful()
-        ->assertJsonPath('data.membership_expires_at', fn ($v) => $v !== null && str_contains((string) $v, (string) $expectedYear));
+        ->assertJsonPath('data.membership_expires_at', fn ($v) => $v !== null && str_contains((string) $v, (string) $expectedYear))
+        ->assertJsonPath('data.membership_renewed_at', fn ($v) => $v !== null);
 
     $member->refresh();
     expect($member->membership_expires_at->format('Y'))->toBe((string) $expectedYear);
+    expect($member->membership_renewed_at)->not->toBeNull();
+    expect($member->membership_renewed_at->diffInSeconds(now(), false))->toBeLessThan(5);
 });
 
 it('rejects renew membership for lifetime member', function () {

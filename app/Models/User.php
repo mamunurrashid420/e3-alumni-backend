@@ -34,6 +34,7 @@ class User extends Authenticatable
         'secondary_member_type_id',
         'member_id',
         'membership_expires_at',
+        'membership_renewed_at',
     ];
 
     /**
@@ -56,6 +57,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'membership_expires_at' => 'datetime',
+            'membership_renewed_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'primary_member_type' => PrimaryMemberType::class,
@@ -156,7 +158,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the date when this member's membership expires (end of last paid year).
+     * Get the date when this member's membership expires (exact time: approved_at + payment_years).
      * Returns null for LIFETIME or when no approved application exists.
      * Uses stored membership_expires_at when set; otherwise computed from approved application.
      */
@@ -180,13 +182,12 @@ class User extends Authenticatable
             return null;
         }
 
-        $lastPaidYear = $application->approved_at->year + $years - 1;
-
-        return \Carbon\Carbon::createFromDate($lastPaidYear, 12, 31)->endOfDay();
+        return $application->approved_at->copy()->addYears($years);
     }
 
     /**
      * Compute membership expiry date from approval date and number of years paid.
+     * Expiry is the exact date/time: approved_at + payment_years (e.g. approved 2026-01-26 17:56:09, 1 year → 2027-01-26 17:56:09).
      */
     public static function computeMembershipExpiresAt(?\Carbon\Carbon $approvedAt, int $paymentYears): ?\Carbon\Carbon
     {
@@ -194,22 +195,18 @@ class User extends Authenticatable
             return null;
         }
 
-        $lastPaidYear = $approvedAt->year + $paymentYears - 1;
-
-        return \Carbon\Carbon::createFromDate($lastPaidYear, 12, 31)->endOfDay();
+        return $approvedAt->copy()->addYears($paymentYears);
     }
 
     /**
-     * Extend membership by the given number of years from the current expiry (or from today if expired/none).
+     * Extend membership by the given number of years from the current expiry (or from now if expired/none).
      */
     public function extendMembershipExpiryByYears(int $years): \Carbon\Carbon
     {
         $current = $this->getMembershipExpiresAt();
         $base = ($current && $current->isFuture()) ? $current : now();
 
-        $newYear = $base->year + $years;
-
-        return \Carbon\Carbon::createFromDate($newYear, 12, 31)->endOfDay();
+        return $base->copy()->addYears($years);
     }
 
     /**

@@ -246,7 +246,10 @@ class UserController extends Controller
 
         $years = (int) $request->validated('years');
         $newExpiresAt = $user->extendMembershipExpiryByYears($years);
-        $user->update(['membership_expires_at' => $newExpiresAt]);
+        $user->update([
+            'membership_expires_at' => $newExpiresAt,
+            'membership_renewed_at' => now(),
+        ]);
         $user->load(['secondaryMemberType', 'memberProfile']);
 
         return (new UserResource($user))->response();
