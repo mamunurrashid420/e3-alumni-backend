@@ -40,6 +40,21 @@ class UpdateMemberProfileRequest extends FormRequest
             'institute_name' => ['nullable', 'string', 'max:255'],
             't_shirt_size' => ['nullable', 'string', 'max:50'],
             'blood_group' => ['nullable', 'string', 'max:20'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'photo.file' => 'The photo could not be uploaded. It may be too large (max 5 MB) or the upload was interrupted. Use a JPG or PNG image.',
+            'photo.mimes' => 'The photo must be a JPG or PNG image.',
+            'photo.max' => 'The photo may not be greater than 5 MB.',
         ];
     }
 }

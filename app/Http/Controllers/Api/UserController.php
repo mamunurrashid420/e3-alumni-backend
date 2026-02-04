@@ -8,12 +8,15 @@ use App\Http\Requests\Api\UpdateMemberRequest;
 use App\Http\Requests\Api\UpdateProfileRequest;
 use App\Http\Resources\Api\MemberProfileResource;
 use App\Http\Resources\Api\UserResource;
+use App\Models\MemberProfile;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
 use App\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -42,6 +45,7 @@ class UserController extends Controller
 
     /**
      * Update the authenticated user's member profile (address, profession, etc.).
+     * Accepts optional photo file (multipart).
      */
     public function updateMemberProfile(UpdateMemberProfileRequest $request): JsonResponse
     {
@@ -52,7 +56,22 @@ class UserController extends Controller
             return response()->json(['message' => 'Member profile not found.'], 404);
         }
 
-        $user->memberProfile->update($request->validated());
+        $data = $request->validated();
+        unset($data['photo']);
+
+        if ($request->hasFile('photo')) {
+            $profile = $user->memberProfile;
+            if ($profile->photo) {
+                Storage::disk('public')->delete($profile->photo);
+            }
+            $file = $request->file('photo');
+            $ext = $file->getClientOriginalExtension() ?: 'jpg';
+            $filename = 'photo_'.Str::random(20).'.'.$ext;
+            $path = $file->storeAs(MemberProfile::STORAGE_DIR.'/'.$user->id, $filename, 'public');
+            $data['photo'] = $path;
+        }
+
+        $user->memberProfile->update($data);
 
         return response()->json($this->currentUserResponse($request));
     }

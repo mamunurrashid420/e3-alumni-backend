@@ -4,7 +4,9 @@ use App\Models\MemberProfile;
 use App\Models\User;
 use App\Notifications\MembershipApprovedSms;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -123,6 +125,32 @@ it('returns 404 when updating member profile and user has no profile', function 
         ]);
 
     $response->assertNotFound();
+});
+
+it('allows authenticated member to update profile photo', function () {
+    Storage::fake('public');
+
+    $user = User::factory()->member()->create(['phone' => '01700000001']);
+    MemberProfile::create([
+        'user_id' => $user->id,
+        'present_address' => 'Address',
+    ]);
+
+    $file = UploadedFile::fake()->create('avatar.jpg', 100, 'image/jpeg');
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->post('/api/user/profile', [
+            'photo' => $file,
+            '_method' => 'PUT',
+        ], [
+            'Accept' => 'application/json',
+        ]);
+
+    $response->assertSuccessful();
+    $user->memberProfile->refresh();
+    expect($user->memberProfile->photo)->not->toBeNull();
+    Storage::disk('public')->assertExists($user->memberProfile->photo);
+    expect($response->json('profile.photo'))->not->toBeNull();
 });
 
 it('rejects unauthenticated profile update', function () {
