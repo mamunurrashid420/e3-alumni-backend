@@ -9,6 +9,7 @@ use App\Http\Requests\Api\UpdatePaymentRequest;
 use App\Http\Resources\Api\PaymentResource;
 use App\Models\Payment;
 use App\Models\User;
+use App\Notifications\PaymentApprovedSms;
 use App\Services\MoneyReceiptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -205,6 +206,10 @@ class PaymentController extends Controller
         $payment->update([
             'receipt_file' => $receiptPath,
         ]);
+
+        if ($payment->mobile_number) {
+            $payment->notify(new PaymentApprovedSms($payment));
+        }
 
         return response()->json([
             'message' => 'Payment approved successfully.',

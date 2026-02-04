@@ -7,11 +7,12 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Notifications\Notifiable;
 
 class Payment extends Model
 {
     /** @use HasFactory<\Database\Factories\PaymentFactory> */
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -93,6 +94,14 @@ class Payment extends Model
         $baseUrl = config('app.url');
 
         return "{$baseUrl}/api/payments/{$this->id}/proof";
+    }
+
+    /**
+     * Route notifications for the SMS channel (payee mobile number).
+     */
+    public function routeNotificationForSms(): ?string
+    {
+        return $this->mobile_number;
     }
 
     /**
