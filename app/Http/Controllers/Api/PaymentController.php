@@ -69,6 +69,26 @@ class PaymentController extends Controller
     }
 
     /**
+     * Get payment summary (e.g. total approved amount) for dashboard.
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user?->isSuperAdmin()) {
+            abort(403, 'Forbidden.');
+        }
+
+        $totalApprovedAmount = (string) Payment::query()
+            ->approved()
+            ->sum('payment_amount');
+
+        return response()->json([
+            'total_approved_amount' => $totalApprovedAmount,
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(StorePaymentRequest $request): JsonResponse

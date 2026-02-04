@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Payment routes (super admin only)
     Route::get('/payments', [PaymentController::class, 'index']);
+    Route::get('/payments/summary', [PaymentController::class, 'summary']);
     Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     Route::put('/payments/{payment}', [PaymentController::class, 'update']);
     Route::post('/payments/{payment}/approve', [PaymentController::class, 'approve']);
