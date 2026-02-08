@@ -18,7 +18,7 @@ it('returns events list publicly', function () {
     $response = $this->getJson('/api/events');
 
     $response->assertSuccessful()
-        ->assertJsonStructure(['data' => [['id', 'title', 'location', 'start_at', 'end_at', 'status', 'cover_photo', 'registration_count']]])
+        ->assertJsonStructure(['data' => [['id', 'title', 'location', 'event_at', 'registration_opens_at', 'registration_closes_at', 'status', 'cover_photo', 'registration_count']]])
         ->assertJsonCount(2, 'data');
 });
 
@@ -38,6 +38,25 @@ it('filters events by status closed', function () {
     $response = $this->getJson('/api/events?status=closed');
 
     $response->assertSuccessful()->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'Closed Event');
+});
+
+it('filters upcoming open events by registration_closes_at not yet passed', function () {
+    Event::factory()->open()->create([
+        'title' => 'Registration Open',
+        'event_at' => now()->addDays(5),
+        'registration_opens_at' => now()->subDays(2),
+        'registration_closes_at' => now()->addDays(2),
+    ]);
+    Event::factory()->open()->create([
+        'title' => 'Registration Closed',
+        'event_at' => now()->addDays(5),
+        'registration_opens_at' => now()->subDays(5),
+        'registration_closes_at' => now()->subDay(),
+    ]);
+
+    $response = $this->getJson('/api/events?status=open&upcoming=true');
+
+    $response->assertSuccessful()->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'Registration Open');
 });
 
 // --- Public show ---
@@ -173,6 +192,36 @@ it('returns 422 when event is not open for registration', function () {
     $response->assertUnprocessable();
 });
 
+it('returns 422 when registration period has ended', function () {
+    $member = User::factory()->member()->create(['member_id' => 'G-2000-0001']);
+    $event = Event::factory()->open()->create([
+        'event_at' => now()->addDays(5),
+        'registration_opens_at' => now()->subDays(10),
+        'registration_closes_at' => now()->subDay(),
+    ]);
+
+    $response = $this->actingAs($member, 'sanctum')
+        ->postJson("/api/events/{$event->id}/register");
+
+    $response->assertUnprocessable()->assertJsonFragment(['message' => 'Registration period has ended for this event.']);
+});
+
+it('returns 422 when guest registration and registration period has ended', function () {
+    $event = Event::factory()->open()->create([
+        'event_at' => now()->addDays(5),
+        'registration_opens_at' => now()->subDays(10),
+        'registration_closes_at' => now()->subDay(),
+    ]);
+
+    $response = $this->postJson("/api/events/{$event->id}/register-guest", [
+        'name' => 'Guest User',
+        'phone' => '+8801712345678',
+        'address' => '123 Street, Dhaka',
+    ]);
+
+    $response->assertUnprocessable()->assertJsonFragment(['message' => 'Registration period has ended for this event.']);
+});
+
 it('returns 422 when already registered', function () {
     $member = User::factory()->member()->create(['member_id' => 'G-2000-0001']);
     $event = Event::factory()->open()->create();
@@ -208,8 +257,9 @@ it('stores event as super admin with cover photo', function () {
             'title' => 'Annual Meetup',
             'description' => 'Yearly gathering',
             'location' => 'Dhaka',
-            'start_at' => now()->addDays(5)->toIso8601String(),
-            'end_at' => now()->addDays(5)->addHours(3)->toIso8601String(),
+            'event_at' => now()->addDays(5)->toIso8601String(),
+            'registration_opens_at' => now()->addDay()->toIso8601String(),
+            'registration_closes_at' => now()->addDays(4)->toIso8601String(),
             'status' => EventStatus::Open->value,
             'cover_photo' => $file,
         ], ['Accept' => 'application/json']);
@@ -227,8 +277,9 @@ it('forbids storing event as non super admin', function () {
     $response = $this->actingAs($user, 'sanctum')
         ->postJson('/api/events', [
             'title' => 'Test',
-            'start_at' => now()->addDay()->toIso8601String(),
-            'end_at' => now()->addDays(2)->toIso8601String(),
+            'event_at' => now()->addDays(2)->toIso8601String(),
+            'registration_opens_at' => now()->subDay()->toIso8601String(),
+            'registration_closes_at' => now()->addDay()->toIso8601String(),
             'status' => EventStatus::Open->value,
         ]);
 
@@ -241,7 +292,7 @@ it('validates event store request', function () {
     $response = $this->actingAs($superAdmin, 'sanctum')
         ->postJson('/api/events', []);
 
-    $response->assertUnprocessable()->assertJsonValidationErrors(['title', 'start_at', 'end_at', 'status']);
+    $response->assertUnprocessable()->assertJsonValidationErrors(['title', 'event_at', 'registration_opens_at', 'registration_closes_at', 'status']);
 });
 
 // --- Super admin: update (close with photos) ---
@@ -259,8 +310,9 @@ it('updates event and can close with photos', function () {
             'title' => 'Old Title',
             'description' => $event->description,
             'location' => $event->location,
-            'start_at' => $event->start_at->toIso8601String(),
-            'end_at' => $event->end_at->toIso8601String(),
+            'event_at' => $event->event_at->toIso8601String(),
+            'registration_opens_at' => $event->registration_opens_at->toIso8601String(),
+            'registration_closes_at' => $event->registration_closes_at->toIso8601String(),
             'status' => EventStatus::Closed->value,
             'photos' => [$file1, $file2],
         ], ['Accept' => 'application/json']);
@@ -277,8 +329,9 @@ it('forbids updating event as non super admin', function () {
     $response = $this->actingAs(User::factory()->member()->create(), 'sanctum')
         ->putJson("/api/events/{$event->id}", [
             'title' => 'Updated',
-            'start_at' => $event->start_at->toIso8601String(),
-            'end_at' => $event->end_at->toIso8601String(),
+            'event_at' => $event->event_at->toIso8601String(),
+            'registration_opens_at' => $event->registration_opens_at->toIso8601String(),
+            'registration_closes_at' => $event->registration_closes_at->toIso8601String(),
             'status' => $event->status->value,
         ]);
 
@@ -304,6 +357,31 @@ it('forbids deleting event as non super admin', function () {
 
     $response = $this->actingAs(User::factory()->member()->create(), 'sanctum')
         ->deleteJson("/api/events/{$event->id}");
+
+    $response->assertForbidden();
+});
+
+it('deletes event gallery photo as super admin', function () {
+    Storage::fake('public');
+    $superAdmin = User::factory()->superAdmin()->create();
+    $event = Event::factory()->closed()->create();
+    $photo1 = $event->photos()->create(['path' => 'events/1/gallery/photo1.jpg', 'sort_order' => 0]);
+    $event->photos()->create(['path' => 'events/1/gallery/photo2.jpg', 'sort_order' => 1]);
+
+    $response = $this->actingAs($superAdmin, 'sanctum')
+        ->deleteJson("/api/events/{$event->id}/photos/{$photo1->id}");
+
+    $response->assertNoContent();
+    $this->assertDatabaseMissing('event_photos', ['id' => $photo1->id]);
+    expect($event->photos()->count())->toBe(1);
+});
+
+it('forbids deleting event photo as non super admin', function () {
+    $event = Event::factory()->closed()->create();
+    $photo = $event->photos()->create(['path' => 'events/1/gallery/photo1.jpg', 'sort_order' => 0]);
+
+    $response = $this->actingAs(User::factory()->member()->create(), 'sanctum')
+        ->deleteJson("/api/events/{$event->id}/photos/{$photo->id}");
 
     $response->assertForbidden();
 });

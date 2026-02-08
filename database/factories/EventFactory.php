@@ -20,15 +20,18 @@ class EventFactory extends Factory
      */
     public function definition(): array
     {
-        $startAt = fake()->dateTimeBetween('now', '+1 year');
-        $endAt = (clone $startAt)->modify('+'.fake()->numberBetween(1, 8).' hours');
+        $eventAt = fake()->dateTimeBetween('+1 month', '+1 year');
+        $regOpensAt = now()->copy()->subDays(fake()->numberBetween(1, 14));
+        $regClosesAt = (clone $eventAt)->modify('-1 day');
 
         return [
             'title' => fake()->sentence(3),
             'description' => fake()->optional()->paragraph(),
+            'short_description' => fake()->optional()->sentence(12),
             'location' => fake()->city().', '.fake()->country(),
-            'start_at' => $startAt,
-            'end_at' => $endAt,
+            'event_at' => $eventAt,
+            'registration_opens_at' => $regOpensAt,
+            'registration_closes_at' => $regClosesAt,
             'status' => EventStatus::Open,
             'cover_photo' => null,
         ];

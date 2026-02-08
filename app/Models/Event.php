@@ -28,9 +28,11 @@ class Event extends Model
     protected $fillable = [
         'title',
         'description',
+        'short_description',
         'location',
-        'start_at',
-        'end_at',
+        'event_at',
+        'registration_opens_at',
+        'registration_closes_at',
         'status',
         'cover_photo',
     ];
@@ -43,8 +45,9 @@ class Event extends Model
     protected function casts(): array
     {
         return [
-            'start_at' => 'datetime',
-            'end_at' => 'datetime',
+            'event_at' => 'datetime',
+            'registration_opens_at' => 'datetime',
+            'registration_closes_at' => 'datetime',
             'status' => EventStatus::class,
         ];
     }
@@ -92,10 +95,21 @@ class Event extends Model
     }
 
     /**
-     * Scope to only upcoming events (start_at in the future).
+     * Scope to only upcoming events (registration not yet closed).
+     * Events appear as upcoming while registration is still open.
      */
     public function scopeUpcoming($query)
     {
-        return $query->where('start_at', '>=', now());
+        return $query->where('registration_closes_at', '>=', now());
+    }
+
+    /**
+     * Check if registration is currently open (within the registration window).
+     */
+    public function isRegistrationOpen(): bool
+    {
+        $now = now();
+
+        return $this->registration_opens_at <= $now && $this->registration_closes_at >= $now;
     }
 }

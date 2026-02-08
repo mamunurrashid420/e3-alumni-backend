@@ -26,9 +26,11 @@ class StoreEventRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'short_description' => ['nullable', 'string', 'max:500'],
             'location' => ['nullable', 'string', 'max:255'],
-            'start_at' => ['required', 'date'],
-            'end_at' => ['required', 'date', 'after:start_at'],
+            'event_at' => ['required', 'date'],
+            'registration_opens_at' => ['required', 'date'],
+            'registration_closes_at' => ['required', 'date', 'after:registration_opens_at'],
             'status' => ['required', 'string', Rule::in([EventStatus::Draft->value, EventStatus::Open->value])],
             'cover_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
         ];

@@ -12,6 +12,7 @@ use App\Http\Resources\Api\EventListResource;
 use App\Http\Resources\Api\EventRegistrationResource;
 use App\Http\Resources\Api\EventResource;
 use App\Models\Event;
+use App\Models\EventPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,7 @@ class EventController extends Controller
             $query->open()->upcoming();
         }
 
-        $query->orderBy('start_at', 'desc');
+        $query->orderBy('event_at', 'desc');
 
         $events = $query->get();
 
@@ -85,6 +86,10 @@ class EventController extends Controller
             abort(422, 'Event is not open for registration.');
         }
 
+        if (! $event->isRegistrationOpen()) {
+            abort(422, 'Registration period has ended for this event.');
+        }
+
         $exists = $event->registrations()->where('user_id', $request->user()->id)->exists();
         if ($exists) {
             abort(422, 'Already registered for this event.');
@@ -122,6 +127,10 @@ class EventController extends Controller
     {
         if ($event->status !== EventStatus::Open) {
             abort(422, 'Event is not open for registration.');
+        }
+
+        if (! $event->isRegistrationOpen()) {
+            abort(422, 'Registration period has ended for this event.');
         }
 
         $data = $request->validated();
@@ -200,6 +209,25 @@ class EventController extends Controller
         return response()->json([
             'data' => new EventResource($event),
         ]);
+    }
+
+    /**
+     * Remove a photo from the event gallery (super_admin only).
+     */
+    public function destroyPhoto(Event $event, EventPhoto $eventPhoto): JsonResponse
+    {
+        if (! request()->user() || ! request()->user()->isSuperAdmin()) {
+            abort(403, 'Forbidden.');
+        }
+
+        if ($eventPhoto->event_id !== $event->id) {
+            abort(404);
+        }
+
+        Storage::disk('public')->delete($eventPhoto->path);
+        $eventPhoto->delete();
+
+        return response()->json(null, 204);
     }
 
     /**

@@ -133,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events', [EventController::class, 'store']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
+    Route::delete('/events/{event}/photos/{eventPhoto}', [EventController::class, 'destroyPhoto']);
 
     // Downloads (super admin only)
     Route::post('/downloads', [DownloadController::class, 'store']);

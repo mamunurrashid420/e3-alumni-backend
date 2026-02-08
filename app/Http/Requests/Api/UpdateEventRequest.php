@@ -26,9 +26,11 @@ class UpdateEventRequest extends FormRequest
         return [
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'short_description' => ['nullable', 'string', 'max:500'],
             'location' => ['nullable', 'string', 'max:255'],
-            'start_at' => ['sometimes', 'required', 'date'],
-            'end_at' => ['sometimes', 'required', 'date', 'after:start_at'],
+            'event_at' => ['sometimes', 'required', 'date'],
+            'registration_opens_at' => ['sometimes', 'required', 'date'],
+            'registration_closes_at' => ['sometimes', 'required', 'date', 'after:registration_opens_at'],
             'status' => ['sometimes', 'required', 'string', Rule::in([EventStatus::Draft->value, EventStatus::Open->value, EventStatus::Closed->value])],
             'cover_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
             'photos' => ['nullable', 'array'],
