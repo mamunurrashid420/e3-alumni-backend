@@ -85,7 +85,11 @@ class UserController extends Controller
     private function currentUserResponse(Request $request): array
     {
         $user = $request->user();
-        $user->load(['secondaryMemberType', 'memberProfile']);
+        $user->load([
+            'secondaryMemberType',
+            'memberProfile',
+            'selfDeclarations' => fn ($q) => $q->latest()->limit(1),
+        ]);
 
         $userResource = new UserResource($user);
         $userData = $userResource->toArray($request);
