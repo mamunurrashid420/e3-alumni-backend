@@ -35,6 +35,7 @@ class User extends Authenticatable
         'member_id',
         'membership_expires_at',
         'membership_renewed_at',
+        'disabled_at',
     ];
 
     /**
@@ -58,6 +59,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'membership_expires_at' => 'datetime',
             'membership_renewed_at' => 'datetime',
+            'disabled_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'primary_member_type' => PrimaryMemberType::class,
@@ -155,6 +157,14 @@ class User extends Authenticatable
     public function isMember(): bool
     {
         return $this->role === UserRole::Member;
+    }
+
+    /**
+     * Check if the user account is disabled.
+     */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
     }
 
     /**

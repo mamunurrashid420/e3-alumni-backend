@@ -258,4 +258,61 @@ class UserController extends Controller
 
         return (new UserResource($user))->response();
     }
+
+    /**
+     * Disable the specified member. Super admin only. Disabled users cannot log in.
+     */
+    public function disable(Request $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+
+        $user->update(['disabled_at' => now()]);
+        $user->tokens()->delete();
+        $user->load(['secondaryMemberType', 'memberProfile']);
+
+        return (new UserResource($user))->response();
+    }
+
+    /**
+     * Re-enable the specified member. Super admin only.
+     */
+    public function enable(Request $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+
+        $user->update(['disabled_at' => null]);
+        $user->load(['secondaryMemberType', 'memberProfile']);
+
+        return (new UserResource($user))->response();
+    }
+
+    /**
+     * Delete the specified member. Super admin only. Cannot delete self.
+     */
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if (! $request->user() || ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+        if ($request->user()->id === $user->id) {
+            return response()->json(['message' => 'You cannot delete your own account.'], 422);
+        }
+        if (! $user->isMember()) {
+            abort(404, 'Member not found.');
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'Member deleted successfully.'], 200);
+    }
 }

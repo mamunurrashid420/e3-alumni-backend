@@ -54,9 +54,15 @@ class AuthController extends Controller
             ? User::where('email', $emailOrPhone)->first()
             : User::where('phone', $emailOrPhone)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email_or_phone' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        if ($user->isDisabled()) {
+            throw ValidationException::withMessages([
+                'email_or_phone' => ['This account has been disabled. Please contact support.'],
             ]);
         }
 

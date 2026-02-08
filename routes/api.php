@@ -86,6 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/members/{user}/profile', [UserController::class, 'updateMemberProfileForMember']);
     Route::post('/members/{user}/resend-sms', [UserController::class, 'resendSms']);
     Route::post('/members/{user}/renew-membership', [UserController::class, 'renewMembership']);
+    Route::post('/members/{user}/disable', [UserController::class, 'disable']);
+    Route::post('/members/{user}/enable', [UserController::class, 'enable']);
+    Route::delete('/members/{user}', [UserController::class, 'destroy']);
 
     // Payment routes (super admin only)
     Route::get('/payments', [PaymentController::class, 'index']);
