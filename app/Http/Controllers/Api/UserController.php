@@ -125,6 +125,15 @@ class UserController extends Controller
             $query->where('primary_member_type', $request->primary_member_type);
         }
 
+        if ($request->boolean('blood_donors')) {
+            $query->whereHas('memberProfile', function ($q) use ($request) {
+                $q->whereNotNull('blood_group')->where('blood_group', '!=', '');
+                if ($request->filled('blood_group')) {
+                    $q->whereRaw('UPPER(blood_group) = ?', [strtoupper($request->blood_group)]);
+                }
+            });
+        }
+
         $perPage = min(10000, max(1, $request->integer('per_page', 15)));
         $members = $query->latest()->paginate($perPage);
 
