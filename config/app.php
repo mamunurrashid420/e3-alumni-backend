@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Homepage Stats
+    |--------------------------------------------------------------------------
+    |
+    | Awards count shown on the public homepage (no awards table).
+    |
+    */
+
+    'homepage_awards_count' => (int) env('HOMEPAGE_AWARDS_COUNT', 0),
+
 ];

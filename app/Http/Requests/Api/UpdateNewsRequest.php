@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Requests\Api;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateNewsRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $news = $this->route('news');
+
+        return [
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('news', 'slug')->ignore($news->id),
+            ],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'body' => ['nullable', 'string'],
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'author' => ['nullable', 'string', 'max:255'],
+            'published_at' => ['nullable', 'date'],
+            'is_published' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+}

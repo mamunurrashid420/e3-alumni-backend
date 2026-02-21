@@ -23,4 +23,25 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 401);
             }
         });
+
+        // Ensure all API exceptions return JSON with a clear message
+        $exceptions->render(function (Throwable $e, \Illuminate\Http\Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+            // Let Laravel handle validation errors (422 + errors array)
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                return null;
+            }
+            $message = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException
+                ? $e->getMessage()
+                : (config('app.debug') ? $e->getMessage() : 'An error occurred. Please try again.');
+            $status = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException
+                ? $e->getStatusCode()
+                : 500;
+
+            return response()->json([
+                'message' => $message ?: 'An error occurred. Please try again.',
+            ], $status);
+        });
     })->create();

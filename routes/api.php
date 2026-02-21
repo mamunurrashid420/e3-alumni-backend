@@ -6,14 +6,18 @@ use App\Http\Controllers\Api\BatchRepresentativeController;
 use App\Http\Controllers\Api\ConveningCommitteeMemberController;
 use App\Http\Controllers\Api\DownloadController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\GalleryPhotoController;
 use App\Http\Controllers\Api\HonorBoardEntryController;
+use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
+use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicMemberController;
 use App\Http\Controllers\Api\ScholarshipApplicationController;
 use App\Http\Controllers\Api\ScholarshipController;
 use App\Http\Controllers\Api\SelfDeclarationController;
+use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Middleware\OptionalSanctumAuth;
@@ -53,6 +57,20 @@ Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo
 
 // Downloads (public read)
 Route::get('/downloads', [DownloadController::class, 'index']);
+
+// Homepage stats (public)
+Route::get('/stats', [StatsController::class, 'index']);
+
+// Gallery photos (public read)
+Route::get('/gallery-photos', [GalleryPhotoController::class, 'index']);
+
+// News (public read published only; with auth super_admin sees all)
+Route::get('/news', [NewsController::class, 'index'])->middleware(OptionalSanctumAuth::class);
+Route::get('/news/slug/{slug}', [NewsController::class, 'showBySlug'])->middleware(OptionalSanctumAuth::class);
+
+// Job listings (public read)
+Route::get('/jobs', [JobController::class, 'index']);
+Route::get('/jobs/{job}', [JobController::class, 'showPublic']);
 
 // Events (public read)
 Route::get('/events', [EventController::class, 'index']);
@@ -131,6 +149,23 @@ Route::middleware('auth:sanctum')->group(function () {
     // Event registration (member only)
     Route::post('/events/{event}/register', [EventController::class, 'register']);
     Route::delete('/events/{event}/register', [EventController::class, 'unregister']);
+
+    // Gallery photos (super admin only)
+    Route::post('/gallery-photos', [GalleryPhotoController::class, 'store']);
+    Route::get('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'show']);
+    Route::put('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'update']);
+    Route::delete('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'destroy']);
+
+    // News (super admin only)
+    Route::post('/news', [NewsController::class, 'store']);
+    Route::get('/news/{news}', [NewsController::class, 'show']);
+    Route::put('/news/{news}', [NewsController::class, 'update']);
+    Route::delete('/news/{news}', [NewsController::class, 'destroy']);
+
+    // Job listings (super admin only; GET /jobs/{job} is public)
+    Route::post('/jobs', [JobController::class, 'store']);
+    Route::put('/jobs/{job}', [JobController::class, 'update']);
+    Route::delete('/jobs/{job}', [JobController::class, 'destroy']);
 
     // Events (super admin only)
     Route::post('/events', [EventController::class, 'store']);
