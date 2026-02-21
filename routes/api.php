@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\MembershipApplicationController;
 use App\Http\Controllers\Api\MemberTypeController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicMemberController;
 use App\Http\Controllers\Api\ScholarshipApplicationController;
@@ -63,6 +64,10 @@ Route::get('/stats', [StatsController::class, 'index']);
 
 // Gallery photos (public read)
 Route::get('/gallery-photos', [GalleryPhotoController::class, 'index']);
+
+// Notices (public: active only; with auth super_admin sees all in index)
+Route::get('/notices', [NoticeController::class, 'index'])->middleware(OptionalSanctumAuth::class);
+Route::get('/notices/{notice}', [NoticeController::class, 'show']);
 
 // News (public read published only; with auth super_admin sees all)
 Route::get('/news', [NewsController::class, 'index'])->middleware(OptionalSanctumAuth::class);
@@ -155,6 +160,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'show']);
     Route::put('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'update']);
     Route::delete('/gallery-photos/{galleryPhoto}', [GalleryPhotoController::class, 'destroy']);
+
+    // Notices (super admin only)
+    Route::post('/notices', [NoticeController::class, 'store']);
+    Route::put('/notices/{notice}', [NoticeController::class, 'update']);
+    Route::delete('/notices/{notice}', [NoticeController::class, 'destroy']);
 
     // News (super admin only)
     Route::post('/news', [NewsController::class, 'store']);
