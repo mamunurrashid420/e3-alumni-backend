@@ -21,7 +21,7 @@ class PublicMemberController extends Controller
         $query = User::query()
             ->where('role', UserRole::Member)
             ->whereNotNull('member_id')
-            ->with('secondaryMemberType');
+            ->with(['secondaryMemberType', 'memberProfile']);
 
         if ($request->filled('search')) {
             $search = $request->search;

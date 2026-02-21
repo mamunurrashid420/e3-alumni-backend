@@ -19,10 +19,12 @@ class PublicMemberResource extends JsonResource
             ? $this->getRelation('approvedMembershipApplication')
             : null;
 
-        $photoUrl = null;
-        if ($application?->photo) {
-            $photoUrl = Storage::disk('public')->url($application->photo);
-        }
+        $memberProfile = $this->relationLoaded('memberProfile')
+            ? $this->getRelation('memberProfile')
+            : null;
+
+        $photoPath = $memberProfile?->photo ?? $application?->photo;
+        $photoUrl = $photoPath ? Storage::disk('public')->url($photoPath) : null;
 
         $secondaryType = $this->relationLoaded('secondaryMemberType')
             ? $this->getRelation('secondaryMemberType')

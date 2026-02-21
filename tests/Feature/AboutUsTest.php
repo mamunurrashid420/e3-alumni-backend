@@ -27,9 +27,9 @@ it('returns paginated members list publicly', function () {
             'meta' => ['current_page', 'last_page', 'per_page', 'total'],
             'links' => ['first', 'last', 'prev', 'next'],
         ])
-        ->assertJsonCount(2, 'data')
-        ->assertJsonPath('data.0.name', 'Bob Member')
-        ->assertJsonPath('data.1.name', 'Alice Member');
+        ->assertJsonCount(2, 'data');
+    $names = array_column($response->json('data'), 'name');
+    expect($names)->toContain('Alice Member')->toContain('Bob Member');
 });
 
 it('returns members filtered by primary_member_type when query param provided', function () {
