@@ -22,6 +22,10 @@ class EventRegistration extends Model
         'registered_at',
         'notes',
         'guest_count',
+        'guest_details',
+        'participant_fee',
+        'total_fees',
+        'payment_document_path',
     ];
 
     /**
@@ -33,6 +37,8 @@ class EventRegistration extends Model
     {
         return [
             'registered_at' => 'datetime',
+            'participant_fee' => 'decimal:2',
+            'total_fees' => 'decimal:2',
         ];
     }
 

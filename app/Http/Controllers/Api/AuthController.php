@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
+use App\Http\Resources\Api\MemberProfileResource;
+use App\Http\Resources\Api\UserResource;
 use App\Models\User;
 use App\PrimaryMemberType;
 use App\UserRole;
@@ -66,12 +68,22 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->load('secondaryMemberType');
+        $user->load([
+            'secondaryMemberType',
+            'memberProfile',
+            'selfDeclarations' => fn ($q) => $q->latest()->limit(1),
+        ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
+        $userResource = new UserResource($user);
+        $userData = $userResource->toArray($request);
+        $userData['profile'] = $user->memberProfile
+            ? (new MemberProfileResource($user->memberProfile))->toArray($request)
+            : null;
+
         return response()->json([
-            'user' => $user,
+            'user' => $userData,
             'token' => $token,
         ]);
     }

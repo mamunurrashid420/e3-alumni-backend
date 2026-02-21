@@ -26,6 +26,7 @@ class EventListResource extends JsonResource
             'registration_closes_at' => $this->registration_closes_at->toIso8601String(),
             'status' => $this->status?->value,
             'cover_photo' => $this->cover_photo ? Storage::disk('public')->url($this->cover_photo) : null,
+            'fee' => $this->fee !== null ? (float) $this->fee : null,
             'registration_count' => $this->whenCounted('registrations'),
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),

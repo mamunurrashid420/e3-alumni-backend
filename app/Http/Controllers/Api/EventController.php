@@ -87,7 +87,7 @@ class EventController extends Controller
         }
 
         if (! $event->isRegistrationOpen()) {
-            abort(422, 'Registration period has ended for this event.');
+            abort(422, $event->registrationClosedMessage());
         }
 
         $exists = $event->registrations()->where('user_id', $request->user()->id)->exists();
@@ -95,12 +95,35 @@ class EventController extends Controller
             abort(422, 'Already registered for this event.');
         }
 
+        $user = $request->user();
+        $user->load('memberProfile');
         $data = $request->validated();
+
+        $paymentPath = null;
+        if ($request->hasFile('payment_document')) {
+            $file = $request->file('payment_document');
+            $filename = 'payment_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $paymentPath = $file->storeAs('events/registrations/'.$event->id, $filename, 'public');
+        }
+
+        $guestCount = (int) ($data['guest_count'] ?? 0);
+        $eventFee = $event->fee !== null ? (float) $event->fee : null;
+        $participantFee = isset($data['participant_fee']) ? (float) $data['participant_fee'] : $eventFee;
+        $totalFees = isset($data['total_fees']) ? (float) $data['total_fees'] : ($eventFee !== null ? $eventFee * (1 + $guestCount) : null);
+
         $event->registrations()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'registered_at' => now(),
+            'name' => $data['name'] ?? $user->name,
+            'phone' => $data['phone'] ?? $user->phone,
+            'address' => $data['address'] ?? $user->memberProfile?->present_address,
+            'ssc_jsc' => $data['ssc_jsc'] ?? ($user->memberProfile?->ssc_year ? 'SSC '.$user->memberProfile->ssc_year : null),
             'notes' => $data['notes'] ?? null,
-            'guest_count' => (int) ($data['guest_count'] ?? 0),
+            'guest_count' => $guestCount,
+            'guest_details' => $data['guest_details'] ?? null,
+            'participant_fee' => $participantFee,
+            'total_fees' => $totalFees,
+            'payment_document_path' => $paymentPath,
         ]);
 
         return response()->json(['message' => 'Registered successfully.'], 201);
@@ -130,10 +153,23 @@ class EventController extends Controller
         }
 
         if (! $event->isRegistrationOpen()) {
-            abort(422, 'Registration period has ended for this event.');
+            abort(422, $event->registrationClosedMessage());
         }
 
         $data = $request->validated();
+
+        $paymentPath = null;
+        if ($request->hasFile('payment_document')) {
+            $file = $request->file('payment_document');
+            $filename = 'payment_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $paymentPath = $file->storeAs('events/registrations/'.$event->id, $filename, 'public');
+        }
+
+        $guestCount = (int) ($data['guest_count'] ?? 0);
+        $eventFee = $event->fee !== null ? (float) $event->fee : null;
+        $participantFee = isset($data['participant_fee']) ? (float) $data['participant_fee'] : $eventFee;
+        $totalFees = isset($data['total_fees']) ? (float) $data['total_fees'] : ($eventFee !== null ? $eventFee * (1 + $guestCount) : null);
+
         $event->registrations()->create([
             'user_id' => null,
             'name' => $data['name'],
@@ -141,6 +177,12 @@ class EventController extends Controller
             'address' => $data['address'],
             'ssc_jsc' => $data['ssc_jsc'] ?? null,
             'registered_at' => now(),
+            'notes' => $data['notes'] ?? null,
+            'guest_count' => $guestCount,
+            'guest_details' => $data['guest_details'] ?? null,
+            'participant_fee' => $participantFee,
+            'total_fees' => $totalFees,
+            'payment_document_path' => $paymentPath,
         ]);
 
         return response()->json(['message' => 'Registered successfully.'], 201);
@@ -200,6 +242,12 @@ class EventController extends Controller
                     'sort_order' => $sortOrder++,
                 ]);
             }
+        }
+
+        if ($request->has('fee')) {
+            $data['fee'] = $request->input('fee') === '' || $request->input('fee') === null
+                ? null
+                : (float) $request->input('fee');
         }
 
         $event->update($data);

@@ -103,6 +103,41 @@ it('registers member for open event', function () {
     $this->assertDatabaseHas('event_registrations', ['event_id' => $event->id, 'user_id' => $member->id]);
 });
 
+it('registers member with subscription guest details and payment document', function () {
+    Storage::fake('public');
+    $member = User::factory()->member()->create(['member_id' => 'G-2000-0002', 'name' => 'Jane Doe', 'phone' => '+8801798765432']);
+    $event = Event::factory()->open()->create();
+
+    $file = UploadedFile::fake()->create('payment.pdf', 100, 'application/pdf');
+
+    $response = $this->actingAs($member, 'sanctum')
+        ->post("/api/events/{$event->id}/register", [
+            'name' => 'Jane Doe',
+            'phone' => '+8801798765432',
+            'address' => '456 Road, Chittagong',
+            'ssc_jsc' => 'SSC 2005',
+            'guest_count' => 2,
+            'guest_details' => 'Spouse, Child',
+            'participant_fee' => 500,
+            'total_fees' => 1500,
+            'payment_document' => $file,
+        ]);
+
+    $response->assertCreated()->assertJson(['message' => 'Registered successfully.']);
+    $reg = EventRegistration::where('event_id', $event->id)->where('user_id', $member->id)->first();
+    expect($reg)->not->toBeNull()
+        ->and($reg->name)->toBe('Jane Doe')
+        ->and($reg->phone)->toBe('+8801798765432')
+        ->and($reg->address)->toBe('456 Road, Chittagong')
+        ->and($reg->ssc_jsc)->toBe('SSC 2005')
+        ->and($reg->guest_count)->toBe(2)
+        ->and($reg->guest_details)->toBe('Spouse, Child')
+        ->and((float) $reg->participant_fee)->toBe(500.0)
+        ->and((float) $reg->total_fees)->toBe(1500.0)
+        ->and($reg->payment_document_path)->not->toBeNull();
+    Storage::disk('public')->assertExists($reg->payment_document_path);
+});
+
 it('returns 401 when unauthenticated user tries to register', function () {
     $event = Event::factory()->open()->create();
 

@@ -33,6 +33,7 @@ class UpdateEventRequest extends FormRequest
             'registration_closes_at' => ['sometimes', 'required', 'date', 'after:registration_opens_at'],
             'status' => ['sometimes', 'required', 'string', Rule::in([EventStatus::Draft->value, EventStatus::Open->value, EventStatus::Closed->value])],
             'cover_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'fee' => ['nullable', 'numeric', 'min:0'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png', 'max:5120'],
         ];

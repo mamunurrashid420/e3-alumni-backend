@@ -35,6 +35,7 @@ class Event extends Model
         'registration_closes_at',
         'status',
         'cover_photo',
+        'fee',
     ];
 
     /**
@@ -49,6 +50,7 @@ class Event extends Model
             'registration_opens_at' => 'datetime',
             'registration_closes_at' => 'datetime',
             'status' => EventStatus::class,
+            'fee' => 'decimal:2',
         ];
     }
 
@@ -111,5 +113,18 @@ class Event extends Model
         $now = now();
 
         return $this->registration_opens_at <= $now && $this->registration_closes_at >= $now;
+    }
+
+    /**
+     * Get a user-facing message when registration is not open (too early or already ended).
+     */
+    public function registrationClosedMessage(): string
+    {
+        $now = now();
+        if ($now < $this->registration_opens_at) {
+            return 'Registration has not opened yet for this event.';
+        }
+
+        return 'Registration period has ended for this event.';
     }
 }

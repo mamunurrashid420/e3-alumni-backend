@@ -26,6 +26,7 @@ class EventResource extends JsonResource
             'registration_closes_at' => $this->registration_closes_at->toIso8601String(),
             'status' => $this->status?->value,
             'cover_photo' => $this->cover_photo ? Storage::disk('public')->url($this->cover_photo) : null,
+            'fee' => $this->fee !== null ? (float) $this->fee : null,
             'photos' => EventPhotoResource::collection($this->whenLoaded('photos')),
             'registration_count' => $this->whenCounted('registrations'),
             'is_registered' => $this->when(isset($this->is_registered), (bool) $this->is_registered),

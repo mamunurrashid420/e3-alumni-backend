@@ -25,7 +25,13 @@ class StoreEventGuestRegistrationRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'address' => ['required', 'string', 'max:1000'],
-            'ssc_jsc' => ['nullable', 'string', 'max:255'],
+            'ssc_jsc' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'guest_count' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'guest_details' => ['nullable', 'string', 'max:2000'],
+            'participant_fee' => ['nullable', 'numeric', 'min:0'],
+            'total_fees' => ['nullable', 'numeric', 'min:0'],
+            'payment_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
     }
 }
