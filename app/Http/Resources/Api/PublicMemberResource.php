@@ -40,6 +40,7 @@ class PublicMemberResource extends JsonResource
             ] : null,
             'designation' => $application?->designation,
             'profession' => $application?->profession,
+            'institute_name' => $application?->institute_name,
             'photo' => $photoUrl,
         ];
     }
