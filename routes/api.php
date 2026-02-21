@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ConveningCommitteeMemberController;
 use App\Http\Controllers\Api\DownloadController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GalleryPhotoController;
+use App\Http\Controllers\Api\HomepageController;
 use App\Http\Controllers\Api\HonorBoardEntryController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\MembershipApplicationController;
@@ -58,6 +59,9 @@ Route::get('/members/{memberId}/info', [PaymentController::class, 'getMemberInfo
 
 // Downloads (public read)
 Route::get('/downloads', [DownloadController::class, 'index']);
+
+// Homepage: single combined endpoint for all public homepage data
+Route::get('/homepage', [HomepageController::class, 'index'])->middleware(OptionalSanctumAuth::class);
 
 // Homepage stats (public)
 Route::get('/stats', [StatsController::class, 'index']);
