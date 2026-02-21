@@ -29,6 +29,7 @@ class ScholarshipApplicationResource extends JsonResource
             'academic_proof_file' => $this->academic_proof_file ? Storage::disk('public')->url($this->academic_proof_file) : null,
             'other_document_file' => $this->other_document_file ? Storage::disk('public')->url($this->other_document_file) : null,
             'statement' => $this->statement,
+            'applicant_signature' => $this->applicant_signature ? Storage::disk('public')->url($this->applicant_signature) : null,
             'user_id' => $this->user_id,
             'status' => $this->status?->value,
             'approved_by' => $this->approved_by,

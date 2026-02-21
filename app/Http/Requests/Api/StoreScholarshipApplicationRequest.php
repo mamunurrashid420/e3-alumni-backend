@@ -48,6 +48,7 @@ class StoreScholarshipApplicationRequest extends FormRequest
             'academic_proof_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'other_document_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'statement' => ['nullable', 'string'],
+            'applicant_signature' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
     }
 }

@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use App\Enums\ScholarshipApplicationStatus;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ScholarshipApplication extends Model
 {
+    /** @use HasFactory<\Database\Factories\ScholarshipApplicationFactory> */
+    use HasFactory;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -25,6 +29,7 @@ class ScholarshipApplication extends Model
         'academic_proof_file',
         'other_document_file',
         'statement',
+        'applicant_signature',
         'user_id',
         'status',
         'approved_by',

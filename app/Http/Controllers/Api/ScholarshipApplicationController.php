@@ -36,6 +36,12 @@ class ScholarshipApplicationController extends Controller
             $data['other_document_file'] = $file->storeAs('scholarship-applications', $filename, 'public');
         }
 
+        if ($request->hasFile('applicant_signature')) {
+            $file = $request->file('applicant_signature');
+            $filename = 'signature_'.Str::random(20).'.'.$file->getClientOriginalExtension();
+            $data['applicant_signature'] = $file->storeAs('scholarship-applications', $filename, 'public');
+        }
+
         $application = ScholarshipApplication::create($data);
 
         $application->load('scholarship');

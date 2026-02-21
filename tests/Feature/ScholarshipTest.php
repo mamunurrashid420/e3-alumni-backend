@@ -5,6 +5,7 @@ use App\Models\Scholarship;
 use App\Models\ScholarshipApplication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -67,15 +68,16 @@ it('can submit a scholarship application as guest', function () {
         'sort_order' => 1,
     ]);
 
-    $data = [
+    $signatureFile = UploadedFile::fake()->create('signature.jpg', 100, 'image/jpeg');
+
+    $response = $this->post('/api/scholarship-applications', [
         'scholarship_id' => $scholarship->id,
         'applicant_name' => 'John Doe',
         'applicant_email' => 'john@example.com',
         'applicant_phone' => '01712345678',
         'applicant_address' => '123 Main St',
-    ];
-
-    $response = $this->postJson('/api/scholarship-applications', $data);
+        'applicant_signature' => $signatureFile,
+    ]);
 
     $response->assertSuccessful()
         ->assertJsonStructure([
@@ -105,14 +107,15 @@ it('sets user_id when submitting scholarship application as logged-in member', f
         'sort_order' => 1,
     ]);
 
-    $data = [
-        'scholarship_id' => $scholarship->id,
-        'applicant_name' => 'Jane Doe',
-        'applicant_phone' => '01812345678',
-    ];
+    $signatureFile = UploadedFile::fake()->create('signature.jpg', 100, 'image/jpeg');
 
     $response = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/scholarship-applications', $data);
+        ->post('/api/scholarship-applications', [
+            'scholarship_id' => $scholarship->id,
+            'applicant_name' => 'Jane Doe',
+            'applicant_phone' => '01812345678',
+            'applicant_signature' => $signatureFile,
+        ]);
 
     $response->assertSuccessful();
 
@@ -130,6 +133,7 @@ it('validates required fields when submitting scholarship application', function
             'scholarship_id',
             'applicant_name',
             'applicant_phone',
+            'applicant_signature',
         ]);
 });
 
