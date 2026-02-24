@@ -15,15 +15,11 @@ class PublicMemberResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $application = $this->relationLoaded('approvedMembershipApplication')
-            ? $this->getRelation('approvedMembershipApplication')
-            : null;
-
         $memberProfile = $this->relationLoaded('memberProfile')
             ? $this->getRelation('memberProfile')
             : null;
 
-        $photoPath = $memberProfile?->photo ?? $application?->photo;
+        $photoPath = $memberProfile?->photo;
         $photoUrl = $photoPath ? Storage::disk('public')->url($photoPath) : null;
 
         $secondaryType = $this->relationLoaded('secondaryMemberType')
@@ -40,9 +36,9 @@ class PublicMemberResource extends JsonResource
                 'name' => $secondaryType->name,
                 'description' => $secondaryType->description,
             ] : null,
-            'designation' => $application?->designation,
-            'profession' => $application?->profession,
-            'institute_name' => $application?->institute_name,
+            'designation' => $memberProfile?->designation,
+            'profession' => $memberProfile?->profession,
+            'institute_name' => $memberProfile?->institute_name,
             'photo' => $photoUrl,
         ];
     }
