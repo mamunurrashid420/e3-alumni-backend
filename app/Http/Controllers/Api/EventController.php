@@ -300,6 +300,7 @@ class EventController extends Controller
 
     /**
      * List registrations for the event (super_admin only).
+     * Paginated by default. Use ?all=1 to return all (e.g. for CSV export).
      */
     public function registrations(Request $request, Event $event): JsonResponse
     {
@@ -307,10 +308,18 @@ class EventController extends Controller
             abort(403, 'Forbidden.');
         }
 
-        $registrations = $event->registrations()->with('user')->orderBy('registered_at', 'desc')->get();
+        $query = $event->registrations()->with('user')->orderBy('registered_at', 'desc');
 
-        return response()->json([
-            'data' => EventRegistrationResource::collection($registrations),
-        ]);
+        if ($request->boolean('all')) {
+            $registrations = $query->get();
+
+            return response()->json([
+                'data' => EventRegistrationResource::collection($registrations),
+            ]);
+        }
+
+        $registrations = $query->paginate($request->integer('per_page', 15));
+
+        return EventRegistrationResource::collection($registrations)->response();
     }
 }
